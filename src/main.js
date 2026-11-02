@@ -34,6 +34,7 @@ import {
     RadioButton,
     Select,
     SelectButton,
+    Slider,
     Tag,
     Textarea,
     Toast,
@@ -75,6 +76,7 @@ createApp(App)
     .component('pv-radio-button',       RadioButton)
     .component('pv-select',             Select)
     .component('pv-select-button',      SelectButton)
+    .component('pv-slider',             Slider)
     .component('pv-tag',                Tag)
     .component('pv-textarea',           Textarea)
     .component('pv-toast',              Toast)
