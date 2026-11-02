@@ -1,42 +1,71 @@
 <script setup>
 import {computed, ref, watch} from "vue";
 import {useI18n} from "vue-i18n";
-import {useRouter} from "vue-router";
+import {useRoute, useRouter} from "vue-router";
 import {useToast} from "primevue";
 import useCropHealthStore from "../../application/crop-health.store.js";
 import PageHeader from "../../../shared/presentation/components/page-header.vue";
 import MessageCard from "../../../shared/presentation/components/message-card.vue";
+import PlotSelector from "../components/plot-selector.vue";
 
-/** Pest reports of the plots in scope with the actions of each role (Angular `DiagnosisInboxView`). */
+/** Role-scoped work list with independent plot, severity and workflow filters (Angular `DiagnosisInboxView`). */
 const store = useCropHealthStore();
+const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 const { t } = useI18n();
-const deletingId = ref(null);
 
-const reports = computed(() => [...store.pestReports].sort((a, b) => b.id - a.id));
+const deletingId = ref(null);
+const plotFilter = ref(0);
+const severityFilter = ref('ALL');
+const statusFilter = ref('ALL');
+
+const plotOptions = computed(() => [{ id: 0, name: t('crop-health.advisor.all') }, ...store.plots]);
+const severityOptions = computed(() => ['ALL', 'LOW', 'MEDIUM', 'HIGH', 'SEVERE'].map(value => ({
+  value, label: value === 'ALL' ? t('crop-health.advisor.all') : t(`crop-health.severities.${value}`)
+})));
+const statusOptions = computed(() => ['ALL', 'PENDING', 'INSPECTED', 'RESOLVED'].map(value => ({
+  value, label: value === 'ALL' ? t('crop-health.advisor.all') : t(`crop-health.report-statuses.${value}`)
+})));
+
+const reports = computed(() => store.pestReports
+    .filter(report => (!plotFilter.value || report.plotId === plotFilter.value)
+        && (severityFilter.value === 'ALL' || report.severity === severityFilter.value)
+        && (statusFilter.value === 'ALL' || report.status === statusFilter.value))
+    .sort((a, b) => Number(b.id) - Number(a.id)));
+
+/** Clears filters without changing the authorization scope or selected satellite plot. */
+const resetFilters = () => {
+  plotFilter.value = 0;
+  severityFilter.value = 'ALL';
+  statusFilter.value = 'ALL';
+};
 
 watch(() => store.scopeReady, ready => {
   deletingId.value = null;
+  resetFilters();
+  const requested = Number(route.query['plotId']);
+  if (ready && store.plots.some(plot => plot.id === requested)) plotFilter.value = requested;
   if (ready) store.loadClinicalData();
 }, { immediate: true });
 
 /** @param {number} id - Report to delete. */
-const remove = (id) => store.deleteReport(id).then(deleted => {
+const remove = (id) => store.deleteReport(id, () => {
   deletingId.value = null;
-  if (deleted) toast.add({ severity: 'success', summary: t('crop-health.report-deleted'), life: 5000 });
-});
-
-/** @param {number} id - Report to resolve. */
-const resolve = (id) => store.resolveReport(id).then(resolved => {
-  if (resolved) toast.add({ severity: 'success', summary: t('crop-health.report-resolved'), life: 5000 });
-});
+  toast.add({ severity: 'success', summary: t('crop-health.report-deleted'), life: 5000 });
+}, () => deletingId.value = null);
 </script>
 
 <template>
   <div class="page">
+    <plot-selector v-if="store.canReport" :plots="store.plots" :selected-plot-id="store.selectedPlot?.id ?? null"
+                   :disabled="store.scopeLoading" class="farmer-plot" @plot-selected="store.selectPlot"/>
+
     <page-header :eyebrow="t('crop-health.clinical-eyebrow')" :title="t('crop-health.inbox-title')"/>
     <nav class="flex flex-wrap gap-3">
+      <pv-button v-if="store.canPrescribe" outlined class="sa-pill" :label="t('crop-health.advisor.plots')"
+                 @click="router.push('/crop-health/assigned-plots')"/>
+      <pv-button text :label="t('crop-health.advisor.refresh')" :disabled="store.loading || store.saving" @click="store.retryScope()"/>
       <pv-button v-if="store.canReport" class="sa-pill" icon="pi pi-plus" :label="t('crop-health.new-report')" @click="router.push('/crop-health/report-pest')"/>
       <pv-button outlined class="sa-pill" :label="t('crop-health.inspections-title')" @click="router.push('/crop-health/inspections')"/>
       <pv-button outlined class="sa-pill" :label="t('crop-health.history-title')" @click="router.push('/crop-health/prescriptions')"/>
@@ -46,41 +75,78 @@ const resolve = (id) => store.resolveReport(id).then(resolved => {
     <pv-progress-bar v-if="store.clinicalLoading || store.saving" mode="indeterminate" style="height: 4px" :aria-label="t('common.loading')"/>
     <message-card v-if="store.clinicalError" icon="pi pi-times-circle" :message="t(store.clinicalError)" alert/>
 
-    <div v-if="!store.clinicalLoading && !store.clinicalError" class="flex flex-column gap-3">
-      <pv-card v-for="report in reports" :key="report.id" class="report-card" :data-status="report.status">
-        <template #content>
-          <div class="report-row">
-            <div class="flex-1" style="min-width: 0">
-              <h2 class="report-title"><i class="pi pi-exclamation-circle" aria-hidden="true"/>{{ store.reportLabel(report.id) }}</h2>
-              <span class="status-badge">{{ t(`crop-health.report-statuses.${report.status}`) }}</span>
-              <p class="description">{{ report.description }}</p>
-              <p>{{ t('crop-health.form-severity') }}: {{ t(`crop-health.severities.${report.severity}`) }}</p>
-              <a v-if="report.photo" :href="report.photo" target="_blank" rel="noopener noreferrer">{{ t('crop-health.view-photo') }}</a>
-            </div>
-            <div class="report-actions">
-              <template v-if="store.canDeleteReport(report.id)">
-                <template v-if="deletingId === report.id">
-                  <span role="alert">{{ t('crop-health.delete-confirm') }}</span>
-                  <pv-button severity="danger" :label="t('crop-health.delete-report')" :disabled="store.saving" @click="remove(report.id)"/>
-                  <pv-button text :label="t('crop-health.cancel')" :disabled="store.saving" @click="deletingId = null"/>
+    <template v-if="!store.clinicalLoading && !store.clinicalError">
+      <section class="filters" :aria-label="t('crop-health.advisor.filters')">
+        <div class="sa-field">
+          <label for="filter-plot">{{ t('crop-health.advisor.plot') }}</label>
+          <pv-select v-model="plotFilter" input-id="filter-plot" :options="plotOptions" option-label="name" option-value="id" fluid/>
+        </div>
+        <div class="sa-field">
+          <label for="filter-severity">{{ t('crop-health.form-severity') }}</label>
+          <pv-select v-model="severityFilter" input-id="filter-severity" :options="severityOptions" option-label="label" option-value="value" fluid/>
+        </div>
+        <div class="sa-field">
+          <label for="filter-status">{{ t('crop-health.advisor.status') }}</label>
+          <pv-select v-model="statusFilter" input-id="filter-status" :options="statusOptions" option-label="label" option-value="value" fluid/>
+        </div>
+        <pv-button text :label="t('crop-health.advisor.clear-filters')" @click="resetFilters"/>
+      </section>
+      <p role="status" class="m-0">{{ t('crop-health.advisor.results') }}: {{ reports.length }} / {{ store.pestReports.length }}</p>
+
+      <div class="flex flex-column gap-3">
+        <pv-card v-for="report in reports" :key="report.id" class="report-card" :data-status="report.status">
+          <template #content>
+            <div class="report-row">
+              <div class="flex-1" style="min-width: 0">
+                <h2 class="report-title"><i class="pi pi-exclamation-circle" aria-hidden="true"/>{{ store.reportLabel(report.id) }}</h2>
+                <span class="status-badge">{{ t(`crop-health.report-statuses.${report.status}`) }}</span>
+                <p>{{ t('crop-health.advisor.producer') }}: {{ store.producerName(report.reporterId) }} · #{{ report.reporterId }}</p>
+                <p class="description">{{ report.description }}</p>
+                <p>{{ t('crop-health.form-severity') }}: {{ t(`crop-health.severities.${report.severity}`) }}</p>
+                <a v-if="report.photo" :href="report.photo" target="_blank" rel="noopener noreferrer">{{ t('crop-health.view-photo') }}</a>
+              </div>
+              <div class="report-actions">
+                <pv-button outlined :label="t('crop-health.case.open')" @click="router.push(`/crop-health/reports/${report.id}`)"/>
+                <template v-if="store.canDeleteReport(report.id)">
+                  <template v-if="deletingId === report.id">
+                    <span role="alert">{{ t('crop-health.delete-confirm') }}</span>
+                    <pv-button severity="danger" :label="t('crop-health.delete-report')" :disabled="store.saving" @click="remove(report.id)"/>
+                    <pv-button text :label="t('crop-health.cancel')" :disabled="store.saving" @click="deletingId = null"/>
+                  </template>
+                  <pv-button v-else outlined icon="pi pi-trash" :label="t('crop-health.delete-report')" :disabled="store.saving" @click="deletingId = report.id"/>
                 </template>
-                <pv-button v-else outlined icon="pi pi-trash" :label="t('crop-health.delete-report')" :disabled="store.saving" @click="deletingId = report.id"/>
-              </template>
-              <pv-button v-if="store.canSchedule && report.status === 'PENDING'" :label="t('crop-health.schedule-inspection')"
-                         @click="router.push({ path: '/crop-health/inspections', query: { reportId: report.id } })"/>
-              <pv-button v-if="store.canPrescribe && report.status === 'INSPECTED'" outlined :label="t('crop-health.btn-prescribe')"
-                         @click="router.push({ path: '/crop-health/prescribe', query: { reportId: report.id } })"/>
-              <pv-button v-if="store.canResolve(report.id)" outlined :label="t('crop-health.resolve-report')" :disabled="store.saving" @click="resolve(report.id)"/>
+                <pv-button v-if="store.canSchedule && report.status === 'PENDING'" :label="t('crop-health.schedule-inspection')"
+                           @click="router.push({ path: '/crop-health/inspections', query: { reportId: report.id } })"/>
+                <pv-button v-if="store.canPrescribe && report.status === 'INSPECTED'" outlined :label="t('crop-health.btn-prescribe')"
+                           @click="router.push({ path: '/crop-health/prescribe', query: { reportId: report.id } })"/>
+                <pv-button v-if="store.canAssess(report.id)" outlined :label="t('crop-health.advisor.evaluate')"
+                           @click="router.push({ path: `/crop-health/reports/${report.id}`, hash: '#assessment' })"/>
+              </div>
             </div>
-          </div>
-        </template>
-      </pv-card>
-      <message-card v-if="reports.length === 0" icon="pi pi-inbox" :message="t('crop-health.no-reports')"/>
-    </div>
+          </template>
+        </pv-card>
+        <message-card v-if="reports.length === 0" icon="pi pi-inbox" :message="t('crop-health.advisor.no-results')"/>
+      </div>
+    </template>
   </div>
 </template>
 
 <style scoped>
+.farmer-plot {
+  max-width: 360px;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.filters .sa-field {
+  flex: 1 1 180px;
+}
+
 .report-card {
   border: 1px solid var(--sa-outline-variant);
   border-left: 4px solid var(--sa-primary);

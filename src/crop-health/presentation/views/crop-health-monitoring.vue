@@ -8,7 +8,7 @@ import useCropHealthStore from "../../application/crop-health.store.js";
 import PageHeader from "../../../shared/presentation/components/page-header.vue";
 import MessageCard from "../../../shared/presentation/components/message-card.vue";
 import PlotSelector from "../components/plot-selector.vue";
-import {observationImage} from "../observation-image.js";
+import {observationImage} from "../utils/observation-image.js";
 import {createBaseLayers, PERU_VIEW, showBaseLayer} from "../../../shared/presentation/map-layers.js";
 import {formatDate, formatNumber, intlLocale} from "../../../shared/presentation/format.js";
 
@@ -92,7 +92,8 @@ const downloadImage = async () => {
     <pv-progress-bar v-if="store.observationsLoading" mode="indeterminate" style="height: 4px" :aria-label="t('common.loading')"/>
     <page-header :eyebrow="t('crop-health.eyebrow')" :title="t('crop-health.viewer-title')"
                  :subtitle="store.selectedPlot ? `${store.selectedPlot.name} · ${store.selectedPlot.region}` : ''">
-      <plot-selector/>
+      <plot-selector :plots="store.plots" :selected-plot-id="store.selectedPlot?.id ?? null" :disabled="store.scopeLoading"
+                     @plot-selected="store.selectPlot"/>
     </page-header>
 
     <message-card v-if="store.observationsError" icon="pi pi-times-circle" :message="t(store.observationsError)" alert/>

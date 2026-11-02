@@ -4,6 +4,7 @@ import {useI18n} from "vue-i18n";
 import {useRouter} from "vue-router";
 import {useToast} from "primevue";
 import useCropHealthStore from "../../application/crop-health.store.js";
+import {RecordPestReportCommand} from "../../domain/model/commands/record-pest-report.command.js";
 import PageHeader from "../../../shared/presentation/components/page-header.vue";
 
 /** The farmer reports a pest or disease (Angular `PestReportForm`). */
@@ -20,6 +21,7 @@ const severities = [
 const form = ref({ plotId: null, description: '', severity: 'LOW' });
 const submitted = ref(false);
 const saved = ref(false);
+const formDisabled = ref(false);
 
 const descriptionInvalid = () => form.value.description.trim().length < 10;
 
@@ -33,15 +35,20 @@ watch(() => store.scopeReady, ready => {
 const onSubmit = () => {
   submitted.value = true;
   saved.value = false;
-  if (!form.value.plotId || descriptionInvalid() || store.saving) return;
+  const user = store.activeUser;
+  if (!form.value.plotId || descriptionInvalid() || store.saving || !user) return;
   const plotId = form.value.plotId;
-  store.recordReport({ ...form.value }).then(ok => {
-    if (!ok) return;
+  formDisabled.value = true;
+  store.recordReport(new RecordPestReportCommand({
+    plotId, reporterId: user.id, description: form.value.description.trim(),
+    severity: form.value.severity, photo: '', clientSyncId: crypto.randomUUID()
+  }), () => {
     form.value = { plotId, description: '', severity: 'LOW' };
     submitted.value = false;
+    formDisabled.value = false;
     saved.value = true;
     toast.add({ severity: 'success', summary: t('crop-health.report-saved'), life: 7000 });
-  });
+  }, () => formDisabled.value = false);
 };
 </script>
 
@@ -81,7 +88,7 @@ const onSubmit = () => {
           </div>
           <div class="flex flex-wrap justify-content-end gap-3">
             <pv-button type="submit" class="sa-pill" :label="t('crop-health.btn-send-report')"
-                       :disabled="store.saving || store.scopeLoading || !!store.scopeError || !store.canReport"/>
+                       :disabled="formDisabled || store.saving || store.scopeLoading || !!store.scopeError || !store.canReport"/>
             <pv-button outlined class="sa-pill" :label="t('crop-health.inbox-title')" @click="router.push('/crop-health/inbox')"/>
           </div>
         </form>

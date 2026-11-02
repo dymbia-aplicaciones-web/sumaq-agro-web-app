@@ -1,8 +1,8 @@
-import logo from "../../assets/logo-sumaqagro.png";
+import logo from "../../../assets/logo-sumaqagro.png";
 
 /**
- * Draws the PNG report of the latest observation of a plot
- * (Angular `application/observation-image.ts`, same layout and colors).
+ * Creates a branded PNG from the recorded observation, without changing its values
+ * (Angular `presentation/utils/observation-image.ts`, same layout and colors).
  * @param {Object} plot - Field plot.
  * @param {Object} observation - Satellite observation.
  * @param {Object<string, string>} labels - Translated texts.
