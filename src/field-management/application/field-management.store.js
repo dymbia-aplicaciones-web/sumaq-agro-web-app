@@ -370,24 +370,6 @@ const useFieldManagementStore = defineStore('field-management', () => {
     }
 
     /**
-     * Saves the editable descriptive data of a plot (Profiles settings). The
-     * crop belongs to its campaign and the area belongs to its GPS boundary,
-     * so neither is changed here.
-     * @param {number} plotId - Plot identifier.
-     * @param {{name: string, region: string}} details - New name and location.
-     * @returns {Promise<boolean>} `true` when the API confirms the update.
-     */
-    function updatePlotDetails(plotId, details) {
-        return savePlot(plotId, plot => {
-            const name = details.name?.trim() ?? '';
-            const region = details.region?.trim() ?? '';
-            if (!name || !region) throw new Error('The plot name and region are required.');
-            plot.name = name;
-            plot.region = region;
-        }, 'field-management.errors.save-plot-details');
-    }
-
-    /**
      * Deletes a plot by ID.
      * @param {number} id - The ID of the plot to delete.
      */
@@ -911,7 +893,6 @@ const useFieldManagementStore = defineStore('field-management', () => {
         registerPlot,
         delineateBoundary,
         recordSoilBaseline,
-        updatePlotDetails,
         deletePlot,
         startCampaign,
         closeCampaign,

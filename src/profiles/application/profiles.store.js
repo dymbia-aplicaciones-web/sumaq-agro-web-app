@@ -1,18 +1,16 @@
 /**
- * Application service store for the Profiles bounded context (Angular `ProfilesStore`):
- * farmer profile, cooperative, members, technical advisors and the institutional dashboard.
+ * Application service store for the Profiles bounded context (Angular `ProfilesStore`).
+ * It coordinates the farmer profile and the institutional Profile read models
+ * for a cooperative director.
  *
  * @module useProfilesStore
  */
 import {defineStore} from "pinia";
 import {computed, ref} from "vue";
 import {ProfilesApi} from "../infrastructure/profiles-api.js";
-import {FarmerProfileAssembler} from "../infrastructure/farmer-profile.assembler.js";
-import {CooperativeAssembler} from "../infrastructure/cooperative.assembler.js";
-import {CooperativeMemberAssembler} from "../infrastructure/cooperative-member.assembler.js";
-import {CooperativeDashboardAssembler} from "../infrastructure/cooperative-dashboard.assembler.js";
-import {TechnicalAdvisorAssembler} from "../infrastructure/technical-advisor.assembler.js";
-import {TechnicalAdvisor} from "../domain/model/technical-advisor.entity.js";
+import {UpdateFarmerAccountCommand} from "../domain/model/commands/update-farmer-account.command.js";
+import {FarmerProfile} from "../domain/model/entities/farmer-profile.entity.js";
+import {TechnicalAdvisor} from "../domain/model/entities/technical-advisor.entity.js";
 
 const profilesApi = new ProfilesApi();
 
@@ -22,187 +20,214 @@ const profilesApi = new ProfilesApi();
  * @returns {Object} Store state and actions.
  */
 const useProfilesStore = defineStore('profiles', () => {
-    /** @type {import('vue').Ref<import('../domain/model/farmer-profile.entity.js').FarmerProfile|null>} */
+    /** @type {import('vue').Ref<FarmerProfile|null>} */
     const profile = ref(null);
-    /** @type {import('vue').Ref<import('../domain/model/cooperative.entity.js').Cooperative|null>} */
+    /** @type {import('vue').Ref<import('../domain/model/entities/cooperative.entity.js').Cooperative|null>} */
     const cooperative = ref(null);
-    /** @type {import('vue').Ref<import('../domain/model/cooperative-member.entity.js').CooperativeMember[]>} */
+    /** @type {import('vue').Ref<import('../domain/model/entities/cooperative-member.entity.js').CooperativeMember[]>} */
     const members = ref([]);
     /** @type {import('vue').Ref<TechnicalAdvisor[]>} */
     const technicalAdvisors = ref([]);
-    /** @type {import('vue').Ref<import('../domain/model/cooperative-dashboard.entity.js').CooperativeDashboard|null>} */
+    /** @type {import('vue').Ref<import('../domain/model/entities/cooperative-dashboard.entity.js').CooperativeDashboard|null>} */
     const dashboard = ref(null);
     const loading = ref(false);
     const saving = ref(false);
     /** @type {import('vue').Ref<string|null>} Message of the last error. */
     const error = ref(null);
+    /** `true` after the farmer's account data was saved. */
+    const contactSaved = ref(false);
+
     /** Number of active members of the cooperative. */
     const activeMemberCount = computed(() => members.value.filter(member => member.active).length);
 
-    function fail(cause) {
-        console.error(cause);
-        error.value = cause.message;
+    function clearContactFeedback() {
+        contactSaved.value = false;
+        error.value = null;
     }
 
     /**
-     * Loads the contact data of a farmer.
+     * Loads the personal contact profile of the independent farmer.
      * @param {number} userId - Farmer.
      */
     function loadFarmerProfile(userId) {
+        contactSaved.value = false;
+        profile.value = null;
         loading.value = true;
         error.value = null;
-        profilesApi.getFarmerProfilesByUser(userId)
-            .then(response => {
-                const [first] = FarmerProfileAssembler.toEntitiesFromResponse(response);
-                if (!first) throw new Error('Farmer profile not found.');
-                profile.value = first;
-            })
-            .catch(fail)
+        profilesApi.getFarmerProfile(userId)
+            .then(loaded => profile.value = loaded)
+            .catch(cause => error.value = cause.message)
             .finally(() => loading.value = false);
     }
 
     /**
-     * Saves the phone and email of the farmer.
-     * @param {{phoneNumber: string, email: string}} command - New contact data.
-     * @returns {Promise<boolean>} `true` when saved.
+     * Validates and persists the farmer's contact data.
+     * @param {import('../domain/model/commands/update-farmer-contact.command.js').UpdateFarmerContactCommand} command - Phone and email.
      */
     function saveContact(command) {
-        if (!profile.value) return Promise.resolve(false);
-        const copy = profile.value.clone();
+        persistFarmerProfile(command);
+    }
+
+    /**
+     * Validates and persists the farmer's names and contact data.
+     * @param {UpdateFarmerAccountCommand} command - Names, phone and email.
+     */
+    function saveAccount(command) {
+        persistFarmerProfile(command);
+    }
+
+    function persistFarmerProfile(command) {
+        contactSaved.value = false;
+        const current = profile.value;
+        if (!current || saving.value) return;
+        let updated;
         try {
-            copy.updateContact(command.phoneNumber, command.email);
+            updated = new FarmerProfile({
+                id: current.id,
+                userId: current.userId,
+                firstName: current.firstName,
+                lastName: current.lastName,
+                phoneNumber: current.phoneNumber,
+                email: current.email
+            });
+            updated.updateContact(command.phoneNumber, command.email);
+            if (command instanceof UpdateFarmerAccountCommand) updated.updateName(command.firstName, command.lastName);
         } catch (cause) {
-            fail(cause);
-            return Promise.resolve(false);
+            error.value = cause instanceof Error ? cause.message : 'Invalid contact data.';
+            return;
         }
         saving.value = true;
         error.value = null;
-        return profilesApi.updateFarmerProfile(FarmerProfileAssembler.toResourceFromEntity(copy))
-            .then(response => {
-                profile.value = FarmerProfileAssembler.toEntityFromResource(response.data);
-                return true;
+        profilesApi.updateFarmerProfile(updated)
+            .then(saved => {
+                profile.value = saved;
+                contactSaved.value = true;
             })
-            .catch(cause => { fail(cause); return false; })
+            .catch(cause => error.value = cause.message)
             .finally(() => saving.value = false);
     }
 
     /**
-     * Loads the institutional indicators of the director's cooperative.
+     * Loads the role-specific read model for the active cooperative director.
      * @param {number} directorUserId - Director.
      */
     function loadCooperativeDashboard(directorUserId) {
         loading.value = true;
         error.value = null;
-        profilesApi.getDashboardsByDirector(directorUserId)
-            .then(response => dashboard.value = CooperativeDashboardAssembler.toEntitiesFromResponse(response)[0] ?? null)
-            .catch(fail)
+        profilesApi.getInstitutionalDashboard(directorUserId)
+            .then(loaded => dashboard.value = loaded)
+            .catch(cause => error.value = cause.message)
             .finally(() => loading.value = false);
     }
 
     /**
-     * Loads the cooperative of the director with its members and technical advisors.
+     * Loads the cooperative, member summary, and technical team for the active director.
      * @param {number} directorUserId - Director.
      */
-    function loadInstitutionalData(directorUserId) {
+    function loadInstitutionalDashboard(directorUserId) {
         loading.value = true;
         error.value = null;
-        profilesApi.getCooperativesByDirector(directorUserId)
-            .then(response => {
-                cooperative.value = CooperativeAssembler.toEntitiesFromResponse(response)[0] ?? null;
-                if (!cooperative.value) return [null, null];
-                return Promise.all([
-                    profilesApi.getMembersByCooperative(cooperative.value.id),
-                    profilesApi.getAdvisorsByCooperative(cooperative.value.id)
-                ]);
+        profilesApi.getCooperativeByDirector(directorUserId)
+            .then(found => {
+                cooperative.value = found;
+                if (!found) return { loadedMembers: [], advisors: [] };
+                return profilesApi.getCooperativeMembers(found.id)
+                    .then(loadedMembers => profilesApi.getTechnicalAdvisors(found.id)
+                        .then(advisors => ({ loadedMembers, advisors })));
             })
-            .then(([membersResponse, advisorsResponse]) => {
-                members.value = membersResponse ? CooperativeMemberAssembler.toEntitiesFromResponse(membersResponse) : [];
-                technicalAdvisors.value = advisorsResponse ? TechnicalAdvisorAssembler.toEntitiesFromResponse(advisorsResponse) : [];
+            .then(({ loadedMembers, advisors }) => {
+                members.value = loadedMembers;
+                technicalAdvisors.value = advisors;
             })
-            .catch(fail)
+            .catch(cause => error.value = cause.message)
             .finally(() => loading.value = false);
     }
 
     /**
-     * Saves the institutional data of the cooperative.
-     * @param {Object} command - Legal name, RUC, region, address, email, phone and representative.
-     * @returns {Promise<boolean>} `true` when saved.
+     * Loads technical advisors specifically for a cooperative.
+     * @param {number} cooperativeId - Cooperative.
+     */
+    function loadTechnicalAdvisors(cooperativeId) {
+        loading.value = true;
+        error.value = null;
+        profilesApi.getTechnicalAdvisors(cooperativeId)
+            .then(advisors => technicalAdvisors.value = advisors)
+            .catch(cause => error.value = cause.message)
+            .finally(() => loading.value = false);
+    }
+
+    /**
+     * Validates and persists the director's institutional configuration.
+     * @param {import('../domain/model/commands/update-cooperative.command.js').UpdateCooperativeCommand} command - Institutional data.
      */
     function saveCooperative(command) {
-        if (!cooperative.value) return Promise.resolve(false);
-        const copy = cooperative.value.clone();
+        const current = cooperative.value;
+        if (!current) return;
         try {
-            copy.updateInstitutionalData(command);
+            current.updateInstitutionalData(command);
         } catch (cause) {
-            fail(cause);
-            return Promise.resolve(false);
+            error.value = cause instanceof Error ? cause.message : 'Invalid institutional data.';
+            return;
         }
         saving.value = true;
         error.value = null;
-        return profilesApi.updateCooperative(CooperativeAssembler.toResourceFromEntity(copy))
-            .then(response => {
-                cooperative.value = CooperativeAssembler.toEntityFromResource(response.data);
-                return true;
-            })
-            .catch(cause => { fail(cause); return false; })
+        profilesApi.updateCooperative(current)
+            .then(saved => cooperative.value = saved)
+            .catch(cause => error.value = cause.message)
             .finally(() => saving.value = false);
     }
 
     /**
-     * Invites a new technical advisor to the cooperative.
-     * @param {{name: string, cipCode: string, phone: string, assignedPlotsCount: number}} command - Advisor data.
+     * Invites a new technical advisor to the cooperative team.
+     * @param {import('../domain/model/commands/invite-technical-advisor.command.js').InviteTechnicalAdvisorCommand} command - Advisor data.
      */
     function inviteTechnicalAdvisor(command) {
-        const advisor = new TechnicalAdvisor({ cooperativeId: cooperative.value?.id ?? 1 });
-        try {
-            advisor.updateDetails(command);
-        } catch (cause) {
-            fail(cause);
-            return;
-        }
+        const newAdvisor = new TechnicalAdvisor({
+            cooperativeId: command.cooperativeId,
+            name: command.name,
+            cipCode: command.cipCode,
+            phone: command.phone,
+            assignedPlotsCount: command.assignedPlotsCount
+        });
         saving.value = true;
         error.value = null;
-        profilesApi.createAdvisor(TechnicalAdvisorAssembler.toResourceFromEntity(advisor))
-            .then(response => technicalAdvisors.value.push(TechnicalAdvisorAssembler.toEntityFromResource(response.data)))
-            .catch(fail)
+        profilesApi.createTechnicalAdvisor(newAdvisor)
+            .then(created => technicalAdvisors.value = [...technicalAdvisors.value, created])
+            .catch(cause => error.value = cause.message)
             .finally(() => saving.value = false);
     }
 
     /**
-     * Reassigns plots or edits the data of an advisor.
-     * @param {TechnicalAdvisor} advisor - Advisor to change.
-     * @param {{name: string, cipCode: string, phone: string, assignedPlotsCount: number}} command - New data.
+     * Reassigns or edits details for an existing technical advisor.
+     * @param {import('../domain/model/commands/reassign-technical-advisor.command.js').ReassignTechnicalAdvisorCommand} command - New data.
      */
-    function reassignTechnicalAdvisor(advisor, command) {
-        const copy = advisor.clone();
+    function reassignTechnicalAdvisor(command) {
+        const advisor = technicalAdvisors.value.find(item => item.id === command.id);
+        if (!advisor) return;
         try {
-            copy.updateDetails(command);
+            advisor.updateDetails(command.name, command.cipCode, command.phone, command.assignedPlotsCount);
         } catch (cause) {
-            fail(cause);
+            error.value = cause instanceof Error ? cause.message : 'Datos inválidos.';
             return;
         }
         saving.value = true;
         error.value = null;
-        profilesApi.updateAdvisor(TechnicalAdvisorAssembler.toResourceFromEntity(copy))
-            .then(response => {
-                const updated = TechnicalAdvisorAssembler.toEntityFromResource(response.data);
-                const index = technicalAdvisors.value.findIndex(item => item.id === updated.id);
-                if (index !== -1) technicalAdvisors.value[index] = updated;
-            })
-            .catch(fail)
+        profilesApi.updateTechnicalAdvisor(advisor)
+            .then(updated => technicalAdvisors.value = technicalAdvisors.value.map(item => item.id === updated.id ? updated : item))
+            .catch(cause => error.value = cause.message)
             .finally(() => saving.value = false);
     }
 
     /**
-     * Removes an advisor from the technical team.
-     * @param {number} id - Advisor identifier.
+     * Removes a technical advisor from the cooperative team.
+     * @param {number} id - Advisor record.
      */
     function removeTechnicalAdvisor(id) {
         saving.value = true;
         error.value = null;
-        profilesApi.deleteAdvisor(id)
+        profilesApi.deleteTechnicalAdvisor(id)
             .then(() => technicalAdvisors.value = technicalAdvisors.value.filter(item => item.id !== id))
-            .catch(fail)
+            .catch(cause => error.value = cause.message)
             .finally(() => saving.value = false);
     }
 
@@ -215,11 +240,15 @@ const useProfilesStore = defineStore('profiles', () => {
         loading,
         saving,
         error,
+        contactSaved,
         activeMemberCount,
+        clearContactFeedback,
         loadFarmerProfile,
         saveContact,
+        saveAccount,
         loadCooperativeDashboard,
-        loadInstitutionalData,
+        loadInstitutionalDashboard,
+        loadTechnicalAdvisors,
         saveCooperative,
         inviteTechnicalAdvisor,
         reassignTechnicalAdvisor,

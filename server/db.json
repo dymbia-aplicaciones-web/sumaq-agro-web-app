@@ -3,10 +3,10 @@
     {
       "id": 1,
       "userId": 1,
+      "firstName": "Guillermo",
+      "lastName": "Quispe",
       "phoneNumber": "+51 987 654 2321",
-      "email": "guillermoquispe@gmail.com",
-      "assignedAdvisorName": "Ing. Juan A. Morales",
-      "supportPhone": "+51 1 700 8080"
+      "email": "guillermoquispe@gmail.com"
     }
   ],
   "cooperatives": [

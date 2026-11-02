@@ -1,248 +1,309 @@
+<script>
+/** Help guides shown in the help tab, in display order. */
+export const GUIDE_IDS = ['plots', 'campaigns', 'expenses', 'health', 'certificates', 'offline'];
+/** Frequently asked questions shown under the guides. */
+export const FAQ_IDS = ['connection', 'contact', 'alerts'];
+/** Route opened by each guide. */
+export const GUIDE_DESTINATIONS = {
+  plots: '/field-management/plots',
+  campaigns: '/field-management/campaigns',
+  expenses: '/field-management/finances',
+  health: '/crop-health/monitoring',
+  certificates: '/harvest-certification/certificates',
+  offline: '/field-management/finances'
+};
+/** PrimeIcons class of each guide. */
+export const GUIDE_ICONS = {
+  plots: 'pi-map',
+  campaigns: 'pi-sun',
+  expenses: 'pi-wallet',
+  health: 'pi-heart',
+  certificates: 'pi-verified',
+  offline: 'pi-sync'
+};
+
+/**
+ * Removes accents and case so the guide search works with or without tildes.
+ * @param {string} value - Text to normalize.
+ * @returns {string} Normalized text.
+ */
+export const normalizeSearch = (value) => value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+</script>
+
 <script setup>
-import {computed, onMounted, ref, watch} from "vue";
+import {computed, ref, watch} from "vue";
 import {useI18n} from "vue-i18n";
 import {useToast} from "primevue";
 import useProfilesStore from "../../application/profiles.store.js";
 import useIamStore from "../../../iam/application/iam.store.js";
-import useFieldManagementStore from "../../../field-management/application/field-management.store.js";
-import {formatNumber} from "../../../shared/presentation/format.js";
-import FarmerHelpManuals from "../components/farmer-help-manuals.vue";
+import {UpdateFarmerAccountCommand} from "../../domain/model/commands/update-farmer-account.command.js";
 
-/** Settings and help for the independent farmer. */
-const { t, locale } = useI18n();
+/** Account settings view for the independent farmer (segment 1). */
+const { t, tm, rt, locale } = useI18n();
 const toast = useToast();
-const profilesStore = useProfilesStore();
-const fieldStore = useFieldManagementStore();
-const iamStore = useIamStore();
+const store = useProfilesStore();
+const session = useIamStore();
 
-const activeTab = ref('plot');
-const selectedPlotId = ref(null);
-const plotForm = ref({ name: '', region: '' });
-const contactForm = ref({ phoneNumber: '', email: '' });
-const plotSubmitted = ref(false);
-const contactSubmitted = ref(false);
+const tab = ref('account');
+const search = ref('');
+const editing = ref(false);
+const submitted = ref(false);
+const form = ref({ firstName: '', lastName: '', phoneNumber: '', email: '' });
+const languageOptions = [{ value: 'es', label: 'Español' }, { value: 'en', label: 'English' }];
 
-const plotOptions = computed(() => fieldStore.plots.map(plot => ({ label: plot.name, value: plot.id })));
-const selectedPlot = computed(() => fieldStore.getPlotById(selectedPlotId.value));
-const activeCampaign = computed(() => selectedPlot.value
-    ? fieldStore.getCurrentCampaignOf(selectedPlot.value.id)
-    : null);
-const cropDescription = computed(() => {
-  const campaign = activeCampaign.value;
-  if (!campaign) return t('common.no-data');
-  const crop = t(`field-management.crop-type.${campaign.cropType}`);
-  return campaign.seedVariety ? `${crop} (${campaign.seedVariety})` : crop;
-});
-const areaDescription = computed(() => selectedPlot.value
-    ? `${formatNumber(selectedPlot.value.areaHectares, locale.value, 2)} ${t('field-management.plots.hectares')}`
-    : '');
-const supportPhone = computed(() => profilesStore.profile?.supportPhone?.trim() ?? '');
-
-const plotNameInvalid = () => !plotForm.value.name.trim();
-const regionInvalid = () => !plotForm.value.region.trim();
-const phoneInvalid = () => contactForm.value.phoneNumber.trim().length < 7;
-const emailInvalid = () => !/^\S+@\S+\.\S+$/.test(contactForm.value.email.trim());
-
-onMounted(() => {
-  if (iamStore.currentUserId !== null) profilesStore.loadFarmerProfile(iamStore.currentUserId);
+const nameInvalid = (value) => !/\S/.test(value) || value.length > 100;
+const errors = computed(() => ({
+  firstName: nameInvalid(form.value.firstName),
+  lastName: nameInvalid(form.value.lastName),
+  phoneNumber: form.value.phoneNumber.length < 7,
+  email: !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)
+}));
+const formInvalid = computed(() => Object.values(errors.value).some(Boolean));
+const dirty = computed(() => {
+  const profile = store.profile;
+  return !!profile && ['firstName', 'lastName', 'phoneNumber', 'email'].some(key => form.value[key] !== profile[key]);
 });
 
-watch(() => fieldStore.selectedPlot, plot => {
-  if (plot) selectedPlotId.value = plot.id;
-}, { immediate: true });
+/**
+ * @param {string} id - Guide.
+ * @returns {string[]} Translated steps of the guide.
+ */
+const stepsOf = (id) => (tm(`profiles.settings.guides.${id}.steps`) ?? []).map(step => rt(step));
 
-watch(selectedPlot, plot => {
-  plotForm.value = plot ? { name: plot.name, region: plot.region } : { name: '', region: '' };
-  plotSubmitted.value = false;
-}, { immediate: true });
+const filteredGuides = computed(() => {
+  locale.value;
+  const query = normalizeSearch(search.value.trim());
+  return GUIDE_IDS.filter(id => normalizeSearch([
+    t(`profiles.settings.guides.${id}.title`),
+    t(`profiles.settings.guides.${id}.summary`),
+    stepsOf(id).join(',')
+  ].join(' ')).includes(query));
+});
 
-watch(() => profilesStore.profile, profile => {
-  if (profile) contactForm.value = { phoneNumber: profile.phoneNumber, email: profile.email };
-}, { immediate: true });
-
-/** Keeps the global plot selection aligned with the plot being configured. */
-const selectPlot = () => {
-  if (selectedPlotId.value !== null) fieldStore.selectPlot(selectedPlotId.value);
+const resetForm = () => {
+  const profile = store.profile;
+  if (profile) form.value = { firstName: profile.firstName, lastName: profile.lastName, phoneNumber: profile.phoneNumber, email: profile.email };
+  submitted.value = false;
 };
 
-/** Saves only descriptive plot data; crop and area come from campaign and GPS data. */
-const savePlot = async () => {
-  plotSubmitted.value = true;
-  if (!selectedPlot.value || plotNameInvalid() || regionInvalid()) return;
-  const saved = await fieldStore.updatePlotDetails(selectedPlot.value.id, { ...plotForm.value });
-  if (saved) {
-    plotSubmitted.value = false;
-    toast.add({ severity: 'success', summary: t('profiles.settings.plot-saved'), life: 3000 });
-  }
+if (session.currentUserId !== null) store.loadFarmerProfile(session.currentUserId);
+
+watch(() => store.profile, resetForm, { immediate: true });
+
+watch(() => store.contactSaved, saved => {
+  if (!saved) return;
+  editing.value = false;
+  submitted.value = false;
+  toast.add({ severity: 'success', summary: t('profiles.settings.saved'), life: 3000 });
+});
+
+const startEditing = () => {
+  if (!store.profile || store.loading || store.saving) return;
+  store.clearContactFeedback();
+  editing.value = true;
 };
 
-/** Saves the farmer's contact data. */
-const saveContact = async () => {
-  contactSubmitted.value = true;
-  if (phoneInvalid() || emailInvalid()) return;
-  const saved = await profilesStore.saveContact({ ...contactForm.value });
-  if (saved) toast.add({ severity: 'success', summary: t('profiles.settings.saved'), life: 3000 });
+const cancelEditing = () => {
+  if (store.saving) return;
+  resetForm();
+  editing.value = false;
 };
 
-const callSupport = () => {
-  if (!supportPhone.value) {
-    toast.add({ severity: 'info', summary: t('profiles.settings.support-unavailable'), life: 3500 });
-    return;
-  }
-  window.location.href = `tel:${supportPhone.value.replace(/[^\d+]/g, '')}`;
-};
-
-/** Password change arrives with IAM. */
-const passwordChangeUnavailable = () => {
-  toast.add({ severity: 'info', summary: t('profiles.settings.password-unavailable'), life: 3500 });
+const saveContact = () => {
+  submitted.value = true;
+  if (formInvalid.value) return;
+  if (!editing.value || store.saving || store.loading || !store.profile) return;
+  store.saveAccount(new UpdateFarmerAccountCommand({ ...form.value }));
 };
 </script>
 
 <template>
   <div class="page settings-page">
-    <pv-progress-bar v-if="fieldStore.loading || profilesStore.loading" mode="indeterminate" style="height: 4px" :aria-label="t('common.loading')"/>
+    <pv-progress-bar v-if="store.loading" mode="indeterminate" style="height: 4px" :aria-label="t('common.loading')"/>
+
     <header>
       <h1 class="m-0 settings-title">{{ t('profiles.settings.title') }}</h1>
       <p class="sa-muted mt-2 mb-0">{{ t('profiles.settings.subtitle') }}</p>
     </header>
 
     <nav class="settings-tabs" :aria-label="t('profiles.settings.title')">
-      <button type="button" class="settings-tab" :class="{ active: activeTab === 'plot' }" :aria-current="activeTab === 'plot' ? 'page' : undefined" @click="activeTab = 'plot'">
-        <i :class="activeTab === 'plot' ? 'pi pi-circle-fill' : 'pi pi-circle'" aria-hidden="true"/>
-        {{ t('profiles.settings.plot-tab') }}
+      <button type="button" class="settings-tab" :class="{ active: tab === 'account' }" :aria-current="tab === 'account' ? 'page' : undefined" @click="tab = 'account'">
+        <i class="pi pi-user" aria-hidden="true"/>{{ t('profiles.settings.account-tab') }}
       </button>
-      <button type="button" class="settings-tab" :class="{ active: activeTab === 'account' }" :aria-current="activeTab === 'account' ? 'page' : undefined" @click="activeTab = 'account'">
-        <i :class="activeTab === 'account' ? 'pi pi-circle-fill' : 'pi pi-circle'" aria-hidden="true"/>
-        {{ t('profiles.settings.account-tab') }}
-      </button>
-      <button type="button" class="settings-tab" :class="{ active: activeTab === 'help' }" :aria-current="activeTab === 'help' ? 'page' : undefined" @click="activeTab = 'help'">
-        <i :class="activeTab === 'help' ? 'pi pi-circle-fill' : 'pi pi-circle'" aria-hidden="true"/>
-        {{ t('profiles.settings.help-tab') }}
+      <button type="button" class="settings-tab" :class="{ active: tab === 'help' }" :aria-current="tab === 'help' ? 'page' : undefined" @click="tab = 'help'">
+        <i class="pi pi-question-circle" aria-hidden="true"/>{{ t('profiles.settings.help-tab') }}
       </button>
     </nav>
 
-    <pv-message v-if="fieldStore.error" severity="error" :closable="false">{{ t(fieldStore.error) }}</pv-message>
-    <pv-message v-if="profilesStore.error" severity="error" :closable="false">{{ profilesStore.error }}</pv-message>
-
-    <pv-card v-if="activeTab === 'plot' && !fieldStore.plotsLoading && !fieldStore.plots.length" class="settings-card">
-      <template #content><p class="sa-muted m-0 empty-message">{{ t('profiles.settings.no-plots') }}</p></template>
-    </pv-card>
-
-    <pv-card v-else-if="activeTab === 'plot'" class="settings-card plot-card">
-      <template #content>
-        <form novalidate @submit.prevent="savePlot">
-          <div v-if="fieldStore.plots.length > 1" class="sa-field plot-selector">
-            <label for="settings-plot">{{ t('profiles.settings.select-plot') }}</label>
-            <pv-select id="settings-plot" v-model="selectedPlotId" :options="plotOptions" option-label="label" option-value="value" fluid @change="selectPlot"/>
+    <template v-if="tab === 'account'">
+      <pv-card class="settings-card">
+        <template #content>
+          <div class="profile-summary">
+            <i class="pi pi-user summary-icon" aria-hidden="true"/>
+            <div class="summary-text">
+              <h2>{{ t('profiles.settings.profile-title') }}</h2>
+              <p v-if="store.profile?.fullName" class="profile-name">{{ store.profile.fullName }}</p>
+              <p>{{ session.currentUser?.email }}</p>
+              <span class="role-chip">{{ t('profiles.settings.farmer-role') }}</span>
+            </div>
+            <router-link :to="{ name: 'field-management-plots' }" class="p-button p-button-outlined manage-link">
+              {{ t('profiles.settings.manage-plots') }}
+            </router-link>
           </div>
+        </template>
+      </pv-card>
 
-          <div class="plot-grid">
-            <div class="sa-field">
-              <label for="plot-name">{{ t('profiles.settings.plot-name') }}</label>
-              <pv-input-text id="plot-name" v-model="plotForm.name" :invalid="plotSubmitted && plotNameInvalid()" fluid/>
-              <small v-if="plotSubmitted && plotNameInvalid()" class="sa-error">{{ t('profiles.settings.name-required') }}</small>
-            </div>
-            <div class="sa-field">
-              <label for="primary-crop">{{ t('profiles.settings.primary-crop') }}</label>
-              <pv-input-text id="primary-crop" :model-value="cropDescription" readonly fluid/>
-            </div>
-            <div class="sa-field">
-              <label for="declared-area">{{ t('profiles.settings.declared-area') }}</label>
-              <pv-input-text id="declared-area" :model-value="areaDescription" readonly fluid/>
-            </div>
-            <div class="sa-field">
-              <label for="plot-location">{{ t('profiles.settings.location') }}</label>
-              <pv-input-text id="plot-location" v-model="plotForm.region" :invalid="plotSubmitted && regionInvalid()" fluid/>
-              <small v-if="plotSubmitted && regionInvalid()" class="sa-error">{{ t('profiles.settings.region-required') }}</small>
-            </div>
-            <div class="info-field">
-              <span class="field-label">{{ t('profiles.settings.assigned-advisor') }}</span>
-              <strong>{{ profilesStore.profile?.assignedAdvisorName || t('profiles.settings.no-advisor') }}</strong>
-            </div>
-            <div class="support-field">
-              <span class="field-label">{{ t('profiles.settings.support-question') }}</span>
-              <pv-button type="button" outlined icon="pi pi-phone" :label="t('profiles.settings.call-support')" @click="callSupport"/>
-            </div>
-          </div>
+      <pv-message v-if="store.error" severity="error" :closable="false" role="alert">{{ store.error }}</pv-message>
 
-          <div class="card-actions">
-            <pv-button type="submit" :loading="fieldStore.loading" :disabled="!selectedPlot" :label="t('profiles.settings.save-changes')"/>
-          </div>
-        </form>
-      </template>
-    </pv-card>
-
-    <pv-card v-else-if="activeTab === 'account'" class="settings-card account-card">
-      <template #content>
-        <div class="account-grid">
-          <section class="contact-section">
-            <h2>{{ t('profiles.settings.contact-title') }}</h2>
-            <form class="flex flex-column gap-3" novalidate @submit.prevent="saveContact">
-              <div class="sa-field">
-                <label for="phone">{{ t('profiles.settings.phone') }}</label>
-                <pv-input-text id="phone" v-model="contactForm.phoneNumber" type="tel" :invalid="contactSubmitted && phoneInvalid()" fluid/>
-                <small v-if="contactSubmitted && phoneInvalid()" class="sa-error">{{ t('profiles.settings.phone-error') }}</small>
+      <pv-card class="settings-card">
+        <template #content>
+          <div class="account-grid">
+            <section class="contact-section">
+              <div class="section-heading">
+                <h2>{{ t('profiles.settings.contact-title') }}</h2>
+                <pv-button v-if="!editing" outlined icon="pi pi-pencil" :label="t('profiles.settings.edit-account')"
+                           :disabled="store.loading || !store.profile" @click="startEditing"/>
               </div>
-              <div class="sa-field">
-                <label for="email">{{ t('profiles.settings.email') }}</label>
-                <pv-input-text id="email" v-model="contactForm.email" type="email" :invalid="contactSubmitted && emailInvalid()" fluid/>
-                <small v-if="contactSubmitted && emailInvalid()" class="sa-error">{{ t('profiles.settings.email-error') }}</small>
+              <p class="sa-muted section-description">{{ t('profiles.settings.contact-description') }}</p>
+              <form class="flex flex-column gap-3" novalidate @submit.prevent="saveContact">
+                <div class="name-fields">
+                  <div class="sa-field">
+                    <label for="first-name">{{ t('profiles.settings.first-name') }}</label>
+                    <pv-input-text id="first-name" v-model="form.firstName" autocomplete="given-name" maxlength="100"
+                                   :readonly="!editing || store.saving" :invalid="submitted && errors.firstName" fluid/>
+                    <small v-if="submitted && errors.firstName" class="sa-error">{{ t('profiles.settings.name-error') }}</small>
+                  </div>
+                  <div class="sa-field">
+                    <label for="last-name">{{ t('profiles.settings.last-name') }}</label>
+                    <pv-input-text id="last-name" v-model="form.lastName" autocomplete="family-name" maxlength="100"
+                                   :readonly="!editing || store.saving" :invalid="submitted && errors.lastName" fluid/>
+                    <small v-if="submitted && errors.lastName" class="sa-error">{{ t('profiles.settings.name-error') }}</small>
+                  </div>
+                </div>
+                <div class="sa-field">
+                  <label for="phone">{{ t('profiles.settings.phone') }}</label>
+                  <pv-input-text id="phone" v-model="form.phoneNumber" type="tel" autocomplete="tel"
+                                 :readonly="!editing || store.saving" :invalid="submitted && errors.phoneNumber" fluid/>
+                  <small v-if="submitted && errors.phoneNumber" class="sa-error">{{ t('profiles.settings.phone-error') }}</small>
+                </div>
+                <div class="sa-field">
+                  <label for="email">{{ t('profiles.settings.email') }}</label>
+                  <pv-input-text id="email" v-model="form.email" type="email" autocomplete="email"
+                                 :readonly="!editing || store.saving" :invalid="submitted && errors.email" fluid/>
+                  <small v-if="submitted && errors.email" class="sa-error">{{ t('profiles.settings.email-error') }}</small>
+                </div>
+                <div v-if="editing" class="form-actions">
+                  <pv-button type="submit" icon="pi pi-save" :loading="store.saving"
+                             :label="store.saving ? t('profiles.settings.saving') : t('common.save')"
+                             :disabled="store.saving || store.loading || !store.profile || !dirty"/>
+                  <pv-button type="button" outlined :label="t('profiles.settings.cancel')" :disabled="store.saving" @click="cancelEditing"/>
+                </div>
+              </form>
+            </section>
+
+            <section class="security-section">
+              <h2>{{ t('profiles.settings.security-title') }}</h2>
+              <p class="sa-muted">{{ t('profiles.settings.security-description') }}</p>
+              <p class="notice">{{ t('profiles.settings.preview') }}</p>
+              <div><pv-button outlined icon="pi pi-lock" :label="t('profiles.settings.change-password')" disabled/></div>
+              <div class="preferences">
+                <h2>{{ t('profiles.settings.preferences') }}</h2>
+                <div class="sa-field">
+                  <label for="language">{{ t('profiles.settings.language') }}</label>
+                  <pv-select v-model="locale" input-id="language" :options="languageOptions" option-label="label" option-value="value" fluid/>
+                </div>
+                <p class="sa-muted">{{ t('profiles.settings.language-description') }}</p>
               </div>
-              <div><pv-button type="submit" icon="pi pi-save" :loading="profilesStore.saving" :label="t('common.save')"/></div>
-            </form>
-          </section>
+            </section>
+          </div>
+        </template>
+      </pv-card>
+    </template>
 
-          <section class="flex flex-column gap-3 security-section">
-            <h2>{{ t('profiles.settings.security-title') }}</h2>
-            <div class="sa-field"><label>{{ t('profiles.settings.current-password') }}</label><pv-input-text type="password" model-value="not-implemented" disabled fluid/></div>
-            <div class="sa-field"><label>{{ t('profiles.settings.new-password') }}</label><pv-input-text type="password" disabled fluid/></div>
-            <div class="sa-field"><label>{{ t('profiles.settings.confirm-password') }}</label><pv-input-text type="password" disabled fluid/></div>
-            <p class="sa-muted m-0">{{ t('profiles.settings.security-description') }}</p>
-            <div class="flex justify-content-end"><pv-button outlined icon="pi pi-lock" :label="t('profiles.settings.change-password')" @click="passwordChangeUnavailable"/></div>
-          </section>
-        </div>
-      </template>
-    </pv-card>
+    <template v-else>
+      <section>
+        <h2>{{ t('profiles.settings.help-title') }}</h2>
+        <p class="sa-muted m-0">{{ t('profiles.settings.help-description') }}</p>
+      </section>
 
-    <pv-card v-else class="settings-card help-card">
-      <template #content><farmer-help-manuals :support-phone="supportPhone"/></template>
-    </pv-card>
+      <div class="sa-field help-search">
+        <label for="help-search">{{ t('profiles.settings.search') }}</label>
+        <pv-icon-field>
+          <pv-input-icon class="pi pi-search"/>
+          <pv-input-text id="help-search" v-model="search" fluid/>
+          <pv-input-icon v-if="search" class="pi pi-times clear-search" role="button" tabindex="0"
+                         :aria-label="t('profiles.settings.clear')" @click="search = ''" @keydown.enter="search = ''"/>
+        </pv-icon-field>
+      </div>
+
+      <div class="guide-grid">
+        <details v-for="id in filteredGuides" :key="id" class="guide">
+          <summary><i :class="['pi', GUIDE_ICONS[id]]" aria-hidden="true"/>{{ t(`profiles.settings.guides.${id}.title`) }}</summary>
+          <p>{{ t(`profiles.settings.guides.${id}.summary`) }}</p>
+          <ol>
+            <li v-for="(step, index) in stepsOf(id)" :key="index">{{ step }}</li>
+          </ol>
+          <router-link :to="GUIDE_DESTINATIONS[id]" class="p-button p-button-outlined">
+            {{ t('profiles.settings.open-section') }}<i class="pi pi-arrow-right" aria-hidden="true"/>
+          </router-link>
+        </details>
+        <p v-if="!filteredGuides.length" role="status">{{ t('profiles.settings.no-results') }}</p>
+      </div>
+
+      <section>
+        <h2>{{ t('profiles.settings.faq-title') }}</h2>
+        <details v-for="id in FAQ_IDS" :key="id" class="guide faq">
+          <summary>{{ t(`profiles.settings.faq.${id}.question`) }}</summary>
+          <p>{{ t(`profiles.settings.faq.${id}.answer`) }}</p>
+        </details>
+      </section>
+    </template>
   </div>
 </template>
 
 <style scoped>
 .settings-page { max-width: 960px; }
 .settings-title { font-size: clamp(2rem, 4vw, 2.5rem); font-weight: 700; }
-.settings-tabs { display: flex; flex-wrap: wrap; gap: 24px; }
+.settings-tabs { display: flex; flex-wrap: wrap; gap: 16px; }
 .settings-tab { display: inline-flex; align-items: center; gap: 12px; min-width: 190px; min-height: 44px; padding: 10px 16px; border: 1px solid var(--sa-tertiary); border-radius: 5px; background: transparent; color: var(--sa-on-tertiary-fixed-variant); cursor: pointer; }
 .settings-tab.active { background: color-mix(in srgb, var(--sa-tertiary-fixed-dim) 18%, transparent); }
-.settings-tab:disabled { cursor: not-allowed; opacity: .58; }
-.settings-tab .pi { font-size: .9rem; }
 .settings-card { overflow: hidden; border: 1px solid var(--sa-primary); border-radius: 24px; box-shadow: 0 2px 3px rgb(0 0 0 / 18%); }
 .settings-card :deep(.p-card-body), .settings-card :deep(.p-card-content) { padding: 0; }
-.empty-message { padding: 32px; }
-.plot-card form { padding: 32px; }
-.plot-selector { max-width: 360px; margin-bottom: 28px; }
-.plot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 72px; }
-.field-label { color: var(--sa-on-surface-variant); font-size: 14px; font-weight: 500; }
-.info-field, .support-field { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
-.info-field strong { color: var(--sa-primary); font-weight: 500; }
-.support-field :deep(.p-button) { min-width: 280px; }
-.card-actions { margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--sa-outline-variant); }
-.card-actions :deep(.p-button) { min-width: 180px; }
+.profile-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; padding: 24px 32px; }
+.summary-icon { font-size: 2.5rem; color: var(--sa-primary); }
+.summary-text { flex: 1; min-width: 200px; }
+.summary-text h2 { margin: 0 0 6px; font-size: 20px; }
+.summary-text p { margin: 0 0 4px; overflow-wrap: anywhere; }
+.profile-name { font-weight: 600; }
+.role-chip { display: inline-block; margin-top: 4px; padding: 2px 10px; border-radius: 999px; background: color-mix(in srgb, var(--sa-primary) 14%, transparent); color: var(--sa-primary); font-size: 13px; }
+.manage-link, .guide .p-button { display: inline-flex; gap: 8px; text-decoration: none; }
 .account-grid { display: grid; grid-template-columns: 1fr 1fr; }
 .account-grid section { padding: 32px; }
 .contact-section { border-right: 1px solid var(--sa-outline-variant); }
-h2 { margin: 0 0 24px; font-size: 24px; }
+.section-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.section-heading h2 { margin: 0; }
+.section-description { margin: 12px 0 20px; }
+.name-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.security-section { display: flex; flex-direction: column; gap: 12px; }
+.security-section p { margin: 0; }
+.notice { padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--sa-tertiary-fixed-dim) 18%, transparent); }
+.preferences { margin-top: 16px; display: flex; flex-direction: column; gap: 12px; }
+.preferences h2 { margin: 0; }
+h2 { margin: 0 0 16px; font-size: 24px; }
+.help-search { max-width: 480px; }
+.clear-search { cursor: pointer; }
+.guide-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; align-items: start; }
+.guide { padding: 16px 20px; border: 1px solid var(--sa-outline-variant); border-radius: 12px; background: var(--sa-surface, transparent); }
+.guide summary { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+.guide summary .pi { color: var(--sa-primary); }
+.guide ol { padding-left: 20px; }
+.faq { margin-bottom: 12px; }
 
 @media (max-width: 720px) {
-  .settings-tabs { gap: 10px; }
   .settings-tab { flex: 1 1 100%; }
-  .plot-card form { padding: 24px; }
-  .plot-grid, .account-grid { grid-template-columns: 1fr; }
-  .plot-grid { gap: 22px; }
+  .account-grid, .name-fields { grid-template-columns: 1fr; }
   .contact-section { border-right: 0; border-bottom: 1px solid var(--sa-outline-variant); }
-  .account-grid section { padding: 24px; }
-  .support-field :deep(.p-button) { min-width: 0; width: 100%; }
+  .account-grid section, .profile-summary { padding: 24px; }
 }
 </style>
