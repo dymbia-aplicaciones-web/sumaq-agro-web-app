@@ -3,8 +3,8 @@ import "../../../shared/presentation/charts.js";
 import {computed} from "vue";
 import {Doughnut} from "vue-chartjs";
 import {useI18n} from "vue-i18n";
-import {formatCurrency, formatDate} from "../../../shared/presentation/format.js";
-import {ExpenseCategory} from "../../domain/model/field-management.enums.js";
+import {formatCurrency, formatDate, formatNumber} from "../../../shared/presentation/format.js";
+import {ExpenseCategory} from "../../domain/model/entities/expense-entry.entity.js";
 
 /** Share of inputs, labor and freight in the investment (Angular `CostDistributionCard`). */
 const props = defineProps({
@@ -19,12 +19,12 @@ const categories = computed(() => props.ledger
     ? Object.values(ExpenseCategory).map(category => ({
       label: `field-management.expense-category.${category}`,
       amount: props.ledger.totalByCategory(category),
-      percentage: Math.round(props.ledger.percentageByCategory(category))
+      percentage: props.ledger.percentageByCategory(category)
     }))
     : []);
 
 /** Date of the oldest expense. */
-const since = computed(() => props.ledger?.entries.at(-1)?.expenseDate ?? null);
+const since = computed(() => props.ledger?.expenseHistory().at(-1)?.expenseDate ?? null);
 
 const chartData = computed(() => {
   if (!props.ledger || props.ledger.totalInvestment().amount === 0) return null;
@@ -62,7 +62,7 @@ const chartOptions = {
                 <strong class="font-medium">{{ t(item.label) }}</strong>
                 <span class="sa-muted">{{ item.amount.format() }}</span>
               </span>
-              <span class="text-lg font-medium">{{ item.percentage }}%</span>
+              <span class="text-lg font-medium">{{ formatNumber(item.percentage, locale, 0) }}%</span>
             </div>
             <pv-progress-bar :value="item.percentage" :show-value="false" style="height: 4px" class="mb-3"
                              :aria-label="t(item.label)" :pt="{ value: { style: { background: colors[index] } } }"/>

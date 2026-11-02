@@ -3,7 +3,7 @@ import {computed} from "vue";
 import {useI18n} from "vue-i18n";
 import {useRouter} from "vue-router";
 import {formatDate, formatNumber} from "../../../shared/presentation/format.js";
-import {ExpenseCategory} from "../../domain/model/field-management.enums.js";
+import {ExpenseCategory} from "../../domain/model/entities/expense-entry.entity.js";
 
 /** Leaf health, total spend and breakeven price of the campaign (Angular `CampaignKpiCards`, US-16 to US-19). */
 const props = defineProps({
@@ -20,7 +20,7 @@ const router = useRouter();
 const categoryShares = computed(() => props.ledger
     ? Object.values(ExpenseCategory).map(category => ({
       label: `field-management.expense-category.${category}`,
-      percentage: Math.round(props.ledger.percentageByCategory(category))
+      percentage: props.ledger.percentageByCategory(category)
     }))
     : []);
 </script>
@@ -61,7 +61,7 @@ const categoryShares = computed(() => props.ledger
         <template v-if="ledger">
           <p class="kpi-label">{{ t('field-management.dashboard.total-invested') }}</p>
           <p class="kpi-value">{{ ledger.totalInvestment().format() }}</p>
-          <p class="kpi-note">{{ categoryShares.map(share => `${t(share.label)}: ${share.percentage}%`).join(' | ') }}</p>
+          <p class="kpi-note">{{ categoryShares.map(share => `${t(share.label)}: ${formatNumber(share.percentage, locale, 0)}%`).join(' | ') }}</p>
         </template>
         <p v-else class="kpi-note">{{ t('field-management.dashboard.no-expenses') }}</p>
       </template>

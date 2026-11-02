@@ -2,7 +2,7 @@
 import {computed, ref} from "vue";
 import {useI18n} from "vue-i18n";
 import {Money} from "../../../shared/domain/model/money.js";
-import {ExpenseCategory} from "../../domain/model/field-management.enums.js";
+import {ExpenseCategory} from "../../domain/model/entities/expense-entry.entity.js";
 
 /** Labor activities offered in the select (`field-management.labor-activity.*`). */
 const LABOR_ACTIVITIES = ['SOWING', 'WEEDING', 'HILLING', 'SPRAYING', 'HARVEST'];

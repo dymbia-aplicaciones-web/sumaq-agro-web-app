@@ -1,112 +1,188 @@
 import {BaseApi} from "../../shared/infrastructure/base-api.js";
-import {BaseEndpoint} from "../../shared/infrastructure/base-endpoint.js";
-
-const fieldPlotsEndpointPath        = import.meta.env.VITE_FIELD_PLOTS_ENDPOINT_PATH;
-const cropCampaignsEndpointPath     = import.meta.env.VITE_CROP_CAMPAIGNS_ENDPOINT_PATH;
-const campaignLedgersEndpointPath   = import.meta.env.VITE_CAMPAIGN_LEDGERS_ENDPOINT_PATH;
+import {FieldPlotAssembler} from "./assemblers/field-plot.assembler.js";
+import {CropCampaignAssembler} from "./assemblers/crop-campaign.assembler.js";
+import {CampaignLedgerAssembler} from "./assemblers/campaign-ledger.assembler.js";
+import {FieldPlotsApiEndpoint} from "./endpoints/field-plots-api-endpoint.js";
+import {CropCampaignsApiEndpoint} from "./endpoints/crop-campaigns-api-endpoint.js";
+import {CampaignLedgersApiEndpoint} from "./endpoints/campaign-ledgers-api-endpoint.js";
 
 /**
- * Infrastructure gateway for Field Management bounded-context endpoints.
+ * Infrastructure facade for field plot, crop campaign and cost ledger endpoint operations.
+ * Every operation returns domain entities.
  *
  * @class FieldManagementApi
  * @extends BaseApi
  */
 export class FieldManagementApi extends BaseApi {
-    /** @type {BaseEndpoint} @private */
-    #fieldPlotsEndpoint;
-    /** @type {BaseEndpoint} @private */
-    #cropCampaignsEndpoint;
-    /** @type {BaseEndpoint} @private */
-    #campaignLedgersEndpoint;
+    /** @type {FieldPlotsApiEndpoint} */
+    #plotsEndpoint;
+    /** @type {CropCampaignsApiEndpoint} */
+    #campaignsEndpoint;
+    /** @type {CampaignLedgersApiEndpoint} */
+    #ledgersEndpoint;
 
     /** Creates endpoint clients for plots, campaigns and cost ledgers. */
     constructor() {
         super();
-        this.#fieldPlotsEndpoint = new BaseEndpoint(this, fieldPlotsEndpointPath);
-        this.#cropCampaignsEndpoint = new BaseEndpoint(this, cropCampaignsEndpointPath);
-        this.#campaignLedgersEndpoint = new BaseEndpoint(this, campaignLedgersEndpointPath);
+        this.#plotsEndpoint = new FieldPlotsApiEndpoint(this);
+        this.#campaignsEndpoint = new CropCampaignsApiEndpoint(this);
+        this.#ledgersEndpoint = new CampaignLedgersApiEndpoint(this);
     }
 
     // ---------- Field plots ----------
 
-    /** @returns {Promise<import('axios').AxiosResponse>} All plots. */
-    getPlots() {
-        return this.#fieldPlotsEndpoint.getAll();
-    }
-
     /**
+     * Retrieves the plots of one producer.
      * @param {number} ownerUserId - Producer who owns the plots.
-     * @returns {Promise<import('axios').AxiosResponse>} Plots of the producer.
+     * @returns {Promise<import('../domain/model/entities/field-plot.entity.js').FieldPlot[]>} Plot collection.
      */
     getPlotsByOwner(ownerUserId) {
-        return this.#fieldPlotsEndpoint.getAllBy({ ownerUserId });
+        return this.#plotsEndpoint.getByOwner(ownerUserId);
     }
 
     /**
-     * @param {Object} resource - Plot resource payload.
-     * @returns {Promise<import('axios').AxiosResponse>} Created plot.
+     * Retrieves the plots with the given IDs; the ones that no longer exist are skipped.
+     * @param {number[]} ids - The IDs of the plots.
+     * @returns {Promise<import('../domain/model/entities/field-plot.entity.js').FieldPlot[]>} Plot collection.
      */
-    createPlot(resource) {
-        return this.#fieldPlotsEndpoint.create(resource);
+    getPlotsByIds(ids) {
+        return this.#plotsEndpoint.getByIds(ids);
     }
 
     /**
-     * @param {Object} resource - Plot resource payload (must include id).
-     * @returns {Promise<import('axios').AxiosResponse>} Updated plot.
+     * Retrieves a single plot by ID.
+     * @param {number} id - The ID of the plot.
+     * @returns {Promise<import('../domain/model/entities/field-plot.entity.js').FieldPlot>} The plot.
      */
-    updatePlot(resource) {
-        return this.#fieldPlotsEndpoint.update(resource.id, resource);
+    getPlotById(id) {
+        return this.#plotsEndpoint.getById(id).then(response => FieldPlotAssembler.toEntityFromResource(response.data));
     }
 
     /**
-     * @param {number} id - Plot identifier.
-     * @returns {Promise<import('axios').AxiosResponse>} Delete response.
+     * Creates a new plot.
+     * @param {import('../domain/model/entities/field-plot.entity.js').FieldPlot} plot - The plot to create.
+     * @returns {Promise<import('../domain/model/entities/field-plot.entity.js').FieldPlot>} The created plot.
+     */
+    createPlot(plot) {
+        return this.#plotsEndpoint.create(FieldPlotAssembler.toResourceFromEntity(plot))
+            .then(response => FieldPlotAssembler.toEntityFromResource(response.data));
+    }
+
+    /**
+     * Updates an existing plot.
+     * @param {import('../domain/model/entities/field-plot.entity.js').FieldPlot} plot - The plot to update.
+     * @returns {Promise<import('../domain/model/entities/field-plot.entity.js').FieldPlot>} The updated plot.
+     */
+    updatePlot(plot) {
+        return this.#plotsEndpoint.update(plot.id, FieldPlotAssembler.toResourceFromEntity(plot))
+            .then(response => FieldPlotAssembler.toEntityFromResource(response.data));
+    }
+
+    /**
+     * Deletes a plot by ID.
+     * @param {number} id - The ID of the plot to delete.
+     * @returns {Promise<void>}
      */
     deletePlot(id) {
-        return this.#fieldPlotsEndpoint.delete(id);
+        return this.#plotsEndpoint.delete(id).then(() => undefined);
     }
 
     // ---------- Crop campaigns ----------
 
     /**
-     * @param {number} plotId - Plot identifier.
-     * @returns {Promise<import('axios').AxiosResponse>} Campaigns of the plot.
+     * Retrieves the campaigns of one plot.
+     * @param {number} plotId - Plot where the campaigns take place.
+     * @returns {Promise<import('../domain/model/entities/crop-campaign.entity.js').CropCampaign[]>} Campaign collection.
      */
     getCampaignsByPlot(plotId) {
-        return this.#cropCampaignsEndpoint.getAllBy({ plotId });
+        return this.#campaignsEndpoint.getByPlot(plotId);
     }
 
     /**
-     * @param {Object} resource - Campaign resource payload.
-     * @returns {Promise<import('axios').AxiosResponse>} Created campaign.
+     * Creates a new campaign.
+     * @param {import('../domain/model/entities/crop-campaign.entity.js').CropCampaign} campaign - The campaign to create.
+     * @returns {Promise<import('../domain/model/entities/crop-campaign.entity.js').CropCampaign>} The created campaign.
      */
-    createCampaign(resource) {
-        return this.#cropCampaignsEndpoint.create(resource);
+    createCampaign(campaign) {
+        return this.#campaignsEndpoint.create(CropCampaignAssembler.toResourceFromEntity(campaign))
+            .then(response => CropCampaignAssembler.toEntityFromResource(response.data));
+    }
+
+    /**
+     * Updates an existing campaign.
+     * @param {import('../domain/model/entities/crop-campaign.entity.js').CropCampaign} campaign - The campaign to update.
+     * @returns {Promise<import('../domain/model/entities/crop-campaign.entity.js').CropCampaign>} The updated campaign.
+     */
+    updateCampaign(campaign) {
+        return this.#campaignsEndpoint.update(campaign.id, CropCampaignAssembler.toResourceFromEntity(campaign))
+            .then(response => CropCampaignAssembler.toEntityFromResource(response.data));
+    }
+
+    /**
+     * Deletes a campaign by ID.
+     * @param {number} id - The ID of the campaign to delete.
+     * @returns {Promise<void>}
+     */
+    deleteCampaign(id) {
+        return this.#campaignsEndpoint.delete(id).then(() => undefined);
+    }
+
+    /**
+     * Downloads the cost report of a campaign.
+     * @param {number} campaignId - Campaign of the report.
+     * @returns {Promise<Blob>} The report file.
+     */
+    downloadCostReport(campaignId) {
+        return this.#campaignsEndpoint.getCostReport(campaignId);
     }
 
     // ---------- Cost ledgers ----------
 
     /**
-     * @param {number} campaignId - Campaign identifier.
-     * @returns {Promise<import('axios').AxiosResponse>} Ledgers of the campaign.
+     * Retrieves the cost ledger of one campaign.
+     * @param {number} campaignId - Campaign of the ledger.
+     * @returns {Promise<import('../domain/model/entities/campaign-ledger.entity.js').CampaignLedger|null>}
+     * The ledger, or `null` if the campaign has none.
      */
-    getLedgersByCampaign(campaignId) {
-        return this.#campaignLedgersEndpoint.getAllBy({ campaignId });
+    getLedgerByCampaign(campaignId) {
+        return this.#ledgersEndpoint.getByCampaign(campaignId);
     }
 
     /**
-     * @param {Object} resource - Ledger resource payload.
-     * @returns {Promise<import('axios').AxiosResponse>} Created ledger.
+     * Retrieves a single cost ledger by ID.
+     * @param {number} id - The ID of the ledger.
+     * @returns {Promise<import('../domain/model/entities/campaign-ledger.entity.js').CampaignLedger>} The ledger.
      */
-    createLedger(resource) {
-        return this.#campaignLedgersEndpoint.create(resource);
+    getLedgerById(id) {
+        return this.#ledgersEndpoint.getById(id).then(response => CampaignLedgerAssembler.toEntityFromResource(response.data));
     }
 
     /**
-     * @param {Object} resource - Ledger resource payload (must include id).
-     * @returns {Promise<import('axios').AxiosResponse>} Updated ledger.
+     * Creates a new cost ledger.
+     * @param {import('../domain/model/entities/campaign-ledger.entity.js').CampaignLedger} ledger - The ledger to create.
+     * @returns {Promise<import('../domain/model/entities/campaign-ledger.entity.js').CampaignLedger>} The created ledger.
      */
-    updateLedger(resource) {
-        return this.#campaignLedgersEndpoint.update(resource.id, resource);
+    createLedger(ledger) {
+        return this.#ledgersEndpoint.create(CampaignLedgerAssembler.toResourceFromEntity(ledger))
+            .then(response => CampaignLedgerAssembler.toEntityFromResource(response.data));
+    }
+
+    /**
+     * Updates an existing cost ledger.
+     * @param {import('../domain/model/entities/campaign-ledger.entity.js').CampaignLedger} ledger - The ledger to update.
+     * @returns {Promise<import('../domain/model/entities/campaign-ledger.entity.js').CampaignLedger>} The updated ledger.
+     */
+    updateLedger(ledger) {
+        return this.#ledgersEndpoint.update(ledger.id, CampaignLedgerAssembler.toResourceFromEntity(ledger))
+            .then(response => CampaignLedgerAssembler.toEntityFromResource(response.data));
+    }
+
+    /**
+     * Deletes a cost ledger by ID.
+     * @param {number} id - The ID of the ledger to delete.
+     * @returns {Promise<void>}
+     */
+    deleteLedger(id) {
+        return this.#ledgersEndpoint.delete(id).then(() => undefined);
     }
 }

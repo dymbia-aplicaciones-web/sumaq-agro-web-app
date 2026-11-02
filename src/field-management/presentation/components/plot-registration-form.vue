@@ -1,30 +1,30 @@
 <script setup>
 import {computed, ref} from "vue";
 import {useI18n} from "vue-i18n";
-import {CampaignLedger} from "../../domain/model/campaign-ledger.entity.js";
-import {CropType} from "../../domain/model/field-management.enums.js";
+import useFieldManagementStore from "../../application/field-management.store.js";
+import {CropType} from "../../domain/model/entities/crop-campaign.entity.js";
+import {isCustomSeedVariety, searchSeedVarieties} from "./campaign-form.vue";
 
-/** Suggested seed varieties per crop (Angular `SEED_VARIETIES`). */
-const SEED_VARIETIES = {
-  [CropType.ANDEAN_POTATO]: ['Papa Canchán', 'Papa Yungay', 'Papa Perricholi', 'Papa Única'],
-  [CropType.SPECIALTY_COFFEE]: ['Typica', 'Caturra', 'Bourbon', 'Geisha', 'Catimor']
-};
-
-/** Step 1 of the plot registration: crop data (Angular `PlotRegistrationForm`). */
-defineProps({
+/** Form with the data of the land and its crop; it validates and emits, the view saves (Angular `PlotRegistrationForm`). */
+const props = defineProps({
+  /** `true` while the plot is being saved. */
   saving: { type: Boolean, default: false }
 });
+/** `submitted`: the form is valid and the producer wants to continue. `cancel`: the producer leaves without saving. */
 const emit = defineEmits(['submitted', 'cancel']);
 const { t } = useI18n();
+const store = useFieldManagementStore();
 
+const cropTypes = Object.values(CropType);
 const form = ref({
   name: '', cropType: CropType.ANDEAN_POTATO, seedVariety: '', region: '',
   sowingDate: null, expectedYield: null, declaredArea: null
 });
 const submitted = ref(false);
 const varietySuggestions = ref([]);
-const cropTypes = Object.values(CropType);
-const yieldUnit = computed(() => CampaignLedger.yieldUnitOf(form.value.cropType));
+
+/** Unit of the expected yield: sacks for potato, quintals for coffee. */
+const yieldUnit = computed(() => store.yieldUnitOf(form.value.cropType));
 
 /** Validation errors (i18n keys), like the Angular validators. */
 const errors = computed(() => {
@@ -32,8 +32,10 @@ const errors = computed(() => {
   const result = {};
   if (!value.name.trim()) result.name = 'field-management.plot-form.name-required';
   else if (value.name.length > 60) result.name = 'common.required';
-  if (!String(value.seedVariety ?? '').trim()) result.seedVariety = 'common.required';
+  const variety = String(value.seedVariety ?? '');
+  if (!variety.trim() || variety.length > 60) result.seedVariety = 'common.required';
   if (!value.region.trim()) result.region = 'field-management.plot-form.region-required';
+  else if (value.region.length > 60) result.region = 'common.required';
   if (!value.sowingDate) result.sowingDate = 'common.required';
   if (value.expectedYield !== null && value.expectedYield < 1) result.expectedYield = 'field-management.plot-form.positive';
   if (value.declaredArea !== null && value.declaredArea < 0.01) result.declaredArea = 'field-management.plot-form.positive';
@@ -41,13 +43,10 @@ const errors = computed(() => {
 });
 
 /**
- * Filters the suggested varieties of the selected crop.
+ * Varieties of the selected crop that match what the producer typed (US-34).
  * @param {{query: string}} event - AutoComplete event.
  */
-const searchVarieties = (event) => {
-  const text = event.query.toLowerCase();
-  varietySuggestions.value = SEED_VARIETIES[form.value.cropType].filter(variety => variety.toLowerCase().includes(text));
-};
+const searchVarieties = (event) => varietySuggestions.value = searchSeedVarieties(form.value.cropType, event.query);
 
 /**
  * @param {string} field - Field name.
@@ -55,17 +54,19 @@ const searchVarieties = (event) => {
  */
 const errorOf = (field) => submitted.value && errors.value[field] ? t(errors.value[field]) : undefined;
 
-/** Emits the data when the form is valid. */
+/** Sends the data when the form is valid; otherwise shows the errors. */
 const onSubmit = () => {
+  if (props.saving) return;
   submitted.value = true;
   if (Object.keys(errors.value).length) return;
   const value = form.value;
+  const seedVariety = String(value.seedVariety);
   emit('submitted', {
-    name: value.name.trim(),
-    region: value.region.trim(),
+    name: value.name,
+    region: value.region,
     cropType: value.cropType,
-    seedVariety: String(value.seedVariety).trim(),
-    customVariety: !SEED_VARIETIES[value.cropType].includes(value.seedVariety),
+    seedVariety,
+    customVariety: isCustomSeedVariety(value.cropType, seedVariety),
     sowingDate: value.sowingDate,
     expectedYield: value.expectedYield,
     yieldUnit: yieldUnit.value,

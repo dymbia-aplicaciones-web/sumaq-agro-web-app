@@ -1,34 +1,30 @@
 <script setup>
-import {ref} from "vue";
+import {computed, ref} from "vue";
 import {useI18n} from "vue-i18n";
-import {useRouter} from "vue-router";
 import {formatNumber} from "../../../shared/presentation/format.js";
 
-/** Card of a registered plot (Angular `PlotCard`, US-28). */
+/** Card of one registered plot: status, crop, area and location (Angular `PlotCard`, US-28). */
 const props = defineProps({
-  /** @type {import('../../domain/model/field-plot.entity.js').FieldPlot} */
+  /** @type {import('../../domain/model/entities/field-plot.entity.js').FieldPlot} The plot shown in the card. */
   plot: { type: Object, required: true },
-  /** @type {import('../../domain/model/crop-campaign.entity.js').CropCampaign} */
+  /** @type {import('../../domain/model/entities/crop-campaign.entity.js').CropCampaign} Current campaign of the plot, if it has one. */
   campaign: { type: Object, default: null },
-  /** Position of the plot in the list. */
-  position: { type: Number, required: true }
+  /** Position of the plot in the plan (1, 2, 3...). */
+  position: { type: Number, required: true },
+  /** Prevents overlapping plot mutations or deletion before ownership has loaded. */
+  deletionDisabled: { type: Boolean, default: false }
 });
-const emit = defineEmits(['view-on-dashboard', 'delineate', 'remove']);
+const emit = defineEmits(['view-on-dashboard', 'view-monitoring', 'delineate', 'view-detail', 'record-soil', 'remove']);
 
 const { t, locale } = useI18n();
-const router = useRouter();
 const menu = ref();
-const menuItems = [
+const menuItems = computed(() => [
   { label: 'field-management.plots.view-on-dashboard', icon: 'pi pi-home', command: () => emit('view-on-dashboard', props.plot) },
+  { label: 'field-management.plots.view-detail', icon: 'pi pi-map', command: () => emit('view-detail', props.plot) },
+  { label: 'field-management.soil.title', icon: 'pi pi-list-check', command: () => emit('record-soil', props.plot) },
   { label: 'field-management.plots.delineate', icon: 'pi pi-pencil', command: () => emit('delineate', props.plot) },
-  { label: 'common.delete', icon: 'pi pi-trash', command: () => emit('remove', props.plot) }
-];
-
-/** Opens the satellite monitoring, or the map when the plot has no polygon yet. */
-const openMainAction = () => {
-  if (props.plot.isMonitored()) router.push('/crop-health/monitoring');
-  else emit('delineate', props.plot);
-};
+  { label: 'common.delete', icon: 'pi pi-trash', disabled: props.deletionDisabled, command: () => emit('remove', props.plot) }
+]);
 </script>
 
 <template>
@@ -61,9 +57,10 @@ const openMainAction = () => {
       </dl>
     </template>
     <template #footer>
-      <pv-button class="card-action" icon="pi pi-arrow-right" icon-pos="right"
-                 :label="t(plot.isMonitored() ? 'field-management.plots.view-monitoring' : 'field-management.plots.delineate')"
-                 @click="openMainAction"/>
+      <pv-button v-if="plot.isMonitored()" class="card-action" icon="pi pi-arrow-right" icon-pos="right"
+                 :label="t('field-management.plots.view-monitoring')" @click="emit('view-monitoring', plot)"/>
+      <pv-button v-else class="card-action" icon="pi pi-arrow-right" icon-pos="right"
+                 :label="t('field-management.plots.delineate')" @click="emit('delineate', plot)"/>
     </template>
   </pv-card>
 </template>
@@ -74,6 +71,7 @@ const openMainAction = () => {
   flex-direction: column;
   height: 100%;
   min-height: 300px;
+  min-width: 0;
 }
 
 .plot-card :deep(.p-card-body),
