@@ -1236,5 +1236,27 @@
       "status": "COMPLETED",
       "paidAt": "2026-10-31T15:15:06.235Z"
     }
-  ]
+  ],
+  "plot-advisor-assignments": [
+    {
+      "id": 1,
+      "plotId": 6,
+      "producerUserId": 1,
+      "advisorUserId": 4,
+      "assignedAt": "2026-10-15T14:00:00Z",
+      "history": [],
+      "status": "ACTIVE"
+    },
+    {
+      "id": 2,
+      "plotId": 7,
+      "producerUserId": 1,
+      "advisorUserId": 4,
+      "assignedAt": "2026-10-15T14:00:00Z",
+      "history": [],
+      "status": "ACTIVE"
+    }
+  ],
+  "treatment-follow-ups": [],
+  "case-assessments": []
 }
