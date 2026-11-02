@@ -1125,5 +1125,116 @@
     }
   ],
   "field-inspections": [],
-  "technical-prescriptions": []
+  "technical-prescriptions": [],
+  "plans": [
+    {
+      "id": 1,
+      "code": "SEED",
+      "name": "Seed",
+      "monthlyPrice": 49,
+      "annualPrice": 490,
+      "currency": "PEN",
+      "plotQuota": 4,
+      "features": [
+        "campaigns-by-plot",
+        "ndvi-ndwi",
+        "expenses",
+        "unit-cost",
+        "agroclimatic-alerts"
+      ]
+    },
+    {
+      "id": 2,
+      "code": "COOPERATIVE_PRO",
+      "name": "Cooperative Pro",
+      "monthlyPrice": 189,
+      "annualPrice": 1890,
+      "currency": "PEN",
+      "plotQuota": 50,
+      "features": [
+        "members-registry",
+        "ndvi-ndwi",
+        "incidents-inspections",
+        "harvest-lots",
+        "qr-certificates"
+      ]
+    },
+    {
+      "id": 3,
+      "code": "TECHNICAL_ADVISOR",
+      "name": "Technical Advisor",
+      "monthlyPrice": 89,
+      "annualPrice": 890,
+      "currency": "PEN",
+      "plotQuota": 20,
+      "features": [
+        "ndvi-ndwi",
+        "pest-reports",
+        "inspections",
+        "prescriptions",
+        "visit-history"
+      ]
+    }
+  ],
+  "subscriptions": [
+    {
+      "id": 1,
+      "userId": 1,
+      "planId": 1,
+      "status": "ACTIVE",
+      "billingCycle": "MONTHLY",
+      "startDate": "2026-10-01",
+      "endDate": "2026-11-01",
+      "autoRenew": true
+    },
+    {
+      "id": 2,
+      "userId": 3,
+      "planId": 2,
+      "status": "ACTIVE",
+      "billingCycle": "MONTHLY",
+      "startDate": "2026-10-01",
+      "endDate": "2026-11-01",
+      "autoRenew": true
+    },
+    {
+      "id": 3,
+      "userId": 4,
+      "planId": 3,
+      "status": "ACTIVE",
+      "billingCycle": "MONTHLY",
+      "startDate": "2026-10-31",
+      "endDate": "2026-11-30",
+      "autoRenew": true
+    }
+  ],
+  "payments": [
+    {
+      "id": 1,
+      "subscriptionId": 1,
+      "amount": 49,
+      "currency": "PEN",
+      "transactionToken": "demo-tx-0001",
+      "status": "COMPLETED",
+      "paidAt": "2026-10-01T10:00:00Z"
+    },
+    {
+      "id": 2,
+      "subscriptionId": 2,
+      "amount": 189,
+      "currency": "PEN",
+      "transactionToken": "demo-tx-0002",
+      "status": "COMPLETED",
+      "paidAt": "2026-10-01T10:05:00Z"
+    },
+    {
+      "id": 3,
+      "subscriptionId": 3,
+      "amount": 89,
+      "currency": "PEN",
+      "transactionToken": "demo-tx-1793459706235",
+      "status": "COMPLETED",
+      "paidAt": "2026-10-31T15:15:06.235Z"
+    }
+  ]
 }
