@@ -1,17 +1,19 @@
 <script setup>
 import {onMounted, ref, watch} from "vue";
 import {useI18n} from "vue-i18n";
-import {useConfirm} from "primevue";
 import useProfilesStore from "../../application/profiles.store.js";
 import useIamStore from "../../../iam/application/iam.store.js";
 import AdvisorDialog from "../components/advisor-dialog.vue";
+import ConfirmDeleteDialog from "../components/confirm-delete-dialog.vue";
+import {UpdateCooperativeCommand} from "../../domain/model/commands/update-cooperative.command.js";
+import {InviteTechnicalAdvisorCommand} from "../../domain/model/commands/invite-technical-advisor.command.js";
+import {ReassignTechnicalAdvisorCommand} from "../../domain/model/commands/reassign-technical-advisor.command.js";
 
 /**
  * Institutional settings of the cooperative: institutional data, technical
  * team and subscription (Angular `CooperativeSettingsView`).
  */
 const { t } = useI18n();
-const confirm = useConfirm();
 const store = useProfilesStore();
 const iamStore = useIamStore();
 
@@ -22,9 +24,11 @@ const form = ref(Object.fromEntries(fields.map(field => [field, ''])));
 const submitted = ref(false);
 const dialogVisible = ref(false);
 const editedAdvisor = ref(null);
+const deleteVisible = ref(false);
+const advisorToRemove = ref(null);
 
 onMounted(() => {
-  if (iamStore.currentRole === 'COOPERATIVE_DIRECTOR') store.loadInstitutionalData(iamStore.currentUserId);
+  if (iamStore.currentRole === 'COOPERATIVE_DIRECTOR') store.loadInstitutionalDashboard(iamStore.currentUserId);
 });
 
 watch(() => store.cooperative, cooperative => {
@@ -46,7 +50,7 @@ const invalid = (field) => {
 const saveCooperative = () => {
   submitted.value = true;
   if (fields.some(invalid)) return;
-  store.saveCooperative({ ...form.value });
+  store.saveCooperative(new UpdateCooperativeCommand({ ...form.value }));
 };
 
 /** @param {Object|null} advisor - Advisor to edit, or `null` to invite. */
@@ -57,20 +61,23 @@ const openAdvisorDialog = (advisor) => {
 
 /** @param {Object} data - Data of the dialog. */
 const onSaveAdvisor = (data) => {
-  if (editedAdvisor.value) store.reassignTechnicalAdvisor(editedAdvisor.value, data);
-  else store.inviteTechnicalAdvisor(data);
+  const { name, cipCode, phone, assignedPlotsCount } = data;
+  if (editedAdvisor.value)
+    store.reassignTechnicalAdvisor(new ReassignTechnicalAdvisorCommand(editedAdvisor.value.id, name, cipCode, phone, assignedPlotsCount));
+  else if (store.cooperative)
+    store.inviteTechnicalAdvisor(new InviteTechnicalAdvisorCommand(store.cooperative.id, name, cipCode, phone, assignedPlotsCount));
 };
 
 /** @param {Object} advisor - Advisor to remove. */
 const confirmRemove = (advisor) => {
-  confirm.require({
-    header: t('profiles.advisors.remove-title'),
-    message: t('profiles.advisors.remove-message', { name: advisor.name }),
-    icon: 'pi pi-exclamation-triangle',
-    acceptProps: { label: t('profiles.advisors.remove'), severity: 'danger' },
-    rejectProps: { label: t('common.cancel'), severity: 'secondary', text: true },
-    accept: () => store.removeTechnicalAdvisor(advisor.id)
-  });
+  advisorToRemove.value = advisor;
+  deleteVisible.value = true;
+};
+
+/** Removes the advisor after the director confirmed it. */
+const onConfirmRemove = () => {
+  if (advisorToRemove.value) store.removeTechnicalAdvisor(advisorToRemove.value.id);
+  advisorToRemove.value = null;
 };
 </script>
 
@@ -151,6 +158,7 @@ const confirmRemove = (advisor) => {
     <p v-if="store.error" class="sa-error m-0" role="alert">{{ store.error }}</p>
 
     <advisor-dialog v-model:visible="dialogVisible" :advisor="editedAdvisor" @save="onSaveAdvisor"/>
+    <confirm-delete-dialog v-model:visible="deleteVisible" :advisor-name="advisorToRemove?.name ?? ''" @confirm="onConfirmRemove"/>
   </div>
 </template>
 

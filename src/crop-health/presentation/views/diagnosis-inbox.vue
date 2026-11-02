@@ -7,6 +7,7 @@ import useCropHealthStore from "../../application/crop-health.store.js";
 import PageHeader from "../../../shared/presentation/components/page-header.vue";
 import MessageCard from "../../../shared/presentation/components/message-card.vue";
 import PlotSelector from "../components/plot-selector.vue";
+import FarmerAdvisoryPanel from "../../../profiles/presentation/components/farmer-advisory-panel.vue";
 
 /** Role-scoped work list with independent plot, severity and workflow filters (Angular `DiagnosisInboxView`). */
 const store = useCropHealthStore();
@@ -60,6 +61,7 @@ const remove = (id) => store.deleteReport(id, () => {
   <div class="page">
     <plot-selector v-if="store.canReport" :plots="store.plots" :selected-plot-id="store.selectedPlot?.id ?? null"
                    :disabled="store.scopeLoading" class="farmer-plot" @plot-selected="store.selectPlot"/>
+    <farmer-advisory-panel v-if="store.canReport && store.selectedPlot" :plot-id="Number(store.selectedPlot.id)"/>
 
     <page-header :eyebrow="t('crop-health.clinical-eyebrow')" :title="t('crop-health.inbox-title')"/>
     <nav class="flex flex-wrap gap-3">

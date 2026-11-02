@@ -8,6 +8,7 @@ import MessageCard from "../../../shared/presentation/components/message-card.vu
 import PlotPolygonViewer from "../components/plot-polygon-viewer.vue";
 import PlotCadastreCard from "../components/plot-cadastre-card.vue";
 import SoilBaselineCard from "../components/soil-baseline-card.vue";
+import FarmerAdvisoryPanel from "../../../profiles/presentation/components/farmer-advisory-panel.vue";
 
 /**
  * Detail of a plot: satellite map with its polygon, cadastral data and soil
@@ -53,6 +54,7 @@ const onViewOnDashboard = () => {
     <div v-if="plot" class="detail-grid">
       <plot-polygon-viewer :coordinates="plot.boundary"/>
       <div class="side">
+        <farmer-advisory-panel :plot-id="id"/>
         <plot-cadastre-card :plot="plot" :campaign="campaign"/>
         <soil-baseline-card :soil-baseline="plot.soilBaseline" :crop-type="campaign?.cropType"
                             :record-link="`/field-management/plots/${id}/soil`"/>
