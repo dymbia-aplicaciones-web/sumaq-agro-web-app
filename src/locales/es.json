@@ -134,7 +134,7 @@
     "plots": {
       "manage": "Administrar Parcelas",
       "title": "Mis Parcelas Registradas",
-      "subtitle": "Gestiona tus lotes bajo monitoreo satelital gratuito ({used} de {quota} cupos utilizados).",
+      "subtitle": "Gestiona tus parcelas con el Plan Semilla ({used} de {quota} cupos utilizados).",
       "plot-number": "Parcela #{number}",
       "crop": "Cultivo",
       "area": "Área",
@@ -147,10 +147,16 @@
       "slot-available": "Cupo Disponible",
       "slot-text": "Habilita el monitoreo satelital de tu lote #{number}. Sin costo adicional.",
       "register": "Registrar Nueva Parcela",
-      "plan-title": "Información de Plan Gratuito",
+      "plan-title": "Información del Plan Semilla",
       "plan-text": "Tu cuenta independiente te permite registrar hasta {quota} parcelas familiares.",
-      "plan-full": "Ya usaste los {quota} cupos de tu plan gratuito. Actualiza tu plan para registrar más parcelas.",
-      "delete-confirm": "¿Eliminar la parcela \"{name}\"? Esta acción no se puede deshacer."
+      "plan-full": "Has alcanzado el límite de {quota} parcelas del Plan Semilla. Un cupo se libera cuando se confirma la eliminación de una parcela.",
+      "delete-confirm": "¿Eliminar la parcela \"{name}\"? Esta acción no se puede deshacer.",
+      "view-detail": "Ver mapa y detalle",
+      "quota-usage": "Plan Semilla: {used} de {quota} parcelas registradas",
+      "quota-remaining": "Cupos disponibles: {remaining}",
+      "quota-counting": "Cada parcela registrada ocupa un cupo, incluso si todavía no tiene polígono o campaña.",
+      "quota-checking": "Comprobando los cupos de tu Plan Semilla…",
+      "quota-refresh": "Actualizar cupos"
     },
     "plot-form": {
       "title": "Registrar Nueva Parcela (Cupo {slot} de {quota})",
@@ -221,10 +227,20 @@
       "quota-reached": "Ya usaste todos los cupos de tu plan.",
       "invalid-polygon": "El polígono no es válido: necesita al menos 3 esquinas y sus lados no pueden cruzarse.",
       "save-polygon": "No pudimos guardar el polígono. Inténtalo de nuevo.",
-      "save-plot-details": "No pudimos guardar los datos de la parcela. Inténtalo de nuevo.",
       "delete-plot": "No pudimos eliminar la parcela.",
       "record-expense": "No pudimos guardar el gasto. Inténtalo de nuevo.",
-      "save-yield": "No pudimos guardar el rendimiento esperado. Inténtalo de nuevo."
+      "save-yield": "No pudimos guardar el rendimiento esperado. Inténtalo de nuevo.",
+      "save-soil": "No pudimos guardar el análisis de suelo. Revisa los valores e inténtalo de nuevo.",
+      "start-campaign": "No pudimos iniciar la campaña. Inténtalo de nuevo.",
+      "close-campaign": "No pudimos cerrar la campaña. Inténtalo de nuevo.",
+      "save-actual-yield": "No pudimos guardar el rendimiento real. Inténtalo de nuevo.",
+      "export-report": "No pudimos exportar el reporte de costos.",
+      "plot-not-owned": "Esta acción requiere una parcela y una cuenta del productor activo.",
+      "quota-unavailable": "No se pudo confirmar tu cupo. Actualiza los datos antes de registrar otra parcela.",
+      "quota-check": "No se pudo comprobar el cupo con el servidor. No se registró una nueva parcela.",
+      "registration-unconfirmed": "No se pudo confirmar el registro. Actualiza la lista antes de volver a intentarlo: la parcela podría haberse guardado.",
+      "registration-partial": "La parcela ya está registrada y ocupa un cupo, pero no se completó su campaña inicial. Revisa la parcela desde Administrar parcelas antes de volver a registrar.",
+      "save-plot-details": "No pudimos guardar los datos de la parcela. Inténtalo de nuevo."
     },
     "finances": {
       "subtitle": "{plot} {'|'} Campaña {season}",
@@ -249,7 +265,9 @@
       "update-yield": "Actualizar",
       "yield-required": "Ingresa el rendimiento que esperas cosechar para calcular el precio de equilibrio.",
       "actual-yield": "Calculado con la cosecha real: {quantity} {unit}.",
-      "suggested-price": "No vendas por menos de {price}"
+      "suggested-price": "No vendas por menos de {price}",
+      "filter": "Filtrar gastos por tipo",
+      "all-categories": "Todos"
     },
     "expense-form": {
       "title": "Registrar un gasto",
@@ -279,6 +297,87 @@
       "HILLING": "Aporque",
       "SPRAYING": "Fumigación",
       "HARVEST": "Cosecha"
+    },
+    "campaigns": {
+      "title": "Mis Campañas",
+      "subtitle": "{plot} · {count} campaña(s)",
+      "new": "Iniciar Nueva Campaña",
+      "new-subtitle": "Nueva temporada de cultivo de {plot}. Se abre su bitácora de costos automáticamente.",
+      "start": "Iniciar campaña",
+      "season-hint": "Temporada {season}",
+      "sowing-date": "Fecha de siembra",
+      "not-sown": "Aún no sembrado",
+      "expense-count": "{count} gasto(s) registrado(s)",
+      "close": "Cerrar campaña",
+      "close-title": "¿Cerrar la temporada {season}?",
+      "close-warning": "La campaña queda de solo lectura y su bitácora de costos ya no acepta gastos.",
+      "actual-yield-hint": "Opcional: lo que cosechaste. También puedes registrarlo después.",
+      "one-in-progress": "Esta parcela ya tiene una campaña en curso. Ciérrala antes de iniciar otra.",
+      "empty": "Esta parcela aún no tiene campañas."
+    },
+    "reports": {
+      "title": "Reportes de Costos",
+      "export": "Exportar reporte",
+      "cost-per-hectare": "Costo por hectárea",
+      "actual-yield": "Rendimiento real",
+      "actual-yield-subtitle": "Se registra al pesar el lote en el acopio, o puedes escribirlo tú.",
+      "harvested": "Cosechado",
+      "breakeven-title": "Reporte de punto de equilibrio",
+      "breakeven-subtitle": "Precio mínimo por unidad para recuperar lo invertido.",
+      "with-expected-yield": "Con el rendimiento esperado",
+      "with-actual-yield": "Con el rendimiento real",
+      "simulator": "Simulador de precio de venta",
+      "margin": "Margen de ganancia: {margin}%",
+      "suggested": "Precio sugerido: {price} {unit}",
+      "sale-price": "Precio que ofrece el comprador",
+      "profit": "Ganarías {amount} vendiendo toda la cosecha.",
+      "loss": "Perderías {amount} vendiendo toda la cosecha.",
+      "area": "Área de la parcela: {area} ha",
+      "per-hectare": "por hectárea",
+      "yield-per-hectare": "Rendimiento: {quantity} {unit} por hectárea",
+      "no-area": "Delimita la parcela o declara su área para calcular el costo por hectárea."
+    },
+    "offline": {
+      "no-connection": "Estás sin conexión. Tus gastos se guardan en este dispositivo.",
+      "pending": "{count} gasto(s) pendiente(s) de sincronizar.",
+      "syncing": "Sincronizando...",
+      "sync-now": "Sincronizar ahora"
+    },
+    "plot-detail": {
+      "title": "Detalle de la Parcela",
+      "subtitle": "Mapa satelital y datos catastrales de la parcela",
+      "map": "Mapa satelital con el polígono de la parcela",
+      "no-polygon": "El polígono de esta parcela aún no está delimitado.",
+      "cadastre": "Datos catastrales",
+      "vertices": "Vértices",
+      "agromonitoring": "Polígono en AgroMonitoring",
+      "not-found": "No encontramos esta parcela."
+    },
+    "soil": {
+      "title": "Análisis de Suelo",
+      "subtitle": "Análisis inicial del suelo de {plot}",
+      "recorded-at": "Análisis del {date}",
+      "ph": "pH del suelo",
+      "ph-hint": "De 0 (ácido) a 14 (alcalino).",
+      "ph-range": "El pH debe estar entre 0 y 14.",
+      "texture": "Textura",
+      "organic-matter": "Materia orgánica",
+      "percentage-range": "Ingresa un porcentaje entre 0 y 100.",
+      "date": "Fecha del análisis",
+      "needs-liming": "El suelo es demasiado ácido para {crop}: aplica cal antes de sembrar.",
+      "ph-ok": "El pH es adecuado para {crop}.",
+      "low-organic-matter": "Materia orgánica baja: agrega compost o guano.",
+      "empty": "Aún no se registra el análisis de suelo de esta parcela.",
+      "record": "Registrar análisis",
+      "update": "Actualizar análisis"
+    },
+    "soil-texture": {
+      "SANDY": "Arenoso",
+      "LOAMY": "Franco",
+      "CLAY": "Arcilloso",
+      "SILTY": "Limoso",
+      "SANDY_LOAM": "Franco arenoso",
+      "CLAY_LOAM": "Franco arcilloso"
     }
   },
   "crop_health": {
@@ -635,10 +734,22 @@
           "objective": "Al terminar tendrás una parcela lista para usar el monitoreo y los demás módulos.",
           "tip": "Marca el perímetro caminando por el terreno o seleccionando sus esquinas en el mapa.",
           "steps": {
-            "0": { "title": "Abre Mis Parcelas", "description": "Ingresa a Mi parcela y selecciona Ver todos mis lotes. Allí verás los cupos disponibles de tu plan." },
-            "1": { "title": "Registra los datos generales", "description": "Escribe el nombre, región, cultivo, variedad, fecha de siembra y área estimada." },
-            "2": { "title": "Delimita el terreno", "description": "Marca al menos tres esquinas sobre el mapa hasta formar un perímetro sin cruces." },
-            "3": { "title": "Guarda y selecciona la parcela", "description": "Confirma el registro y elige la parcela para verla en el dashboard, salud de cultivo y alertas." }
+            "0": {
+              "title": "Abre Mis Parcelas",
+              "description": "Ingresa a Mi parcela y selecciona Ver todos mis lotes. Allí verás los cupos disponibles de tu plan."
+            },
+            "1": {
+              "title": "Registra los datos generales",
+              "description": "Escribe el nombre, región, cultivo, variedad, fecha de siembra y área estimada."
+            },
+            "2": {
+              "title": "Delimita el terreno",
+              "description": "Marca al menos tres esquinas sobre el mapa hasta formar un perímetro sin cruces."
+            },
+            "3": {
+              "title": "Guarda y selecciona la parcela",
+              "description": "Confirma el registro y elige la parcela para verla en el dashboard, salud de cultivo y alertas."
+            }
           }
         },
         "health": {
@@ -648,10 +759,22 @@
           "objective": "Aprenderás a interpretar el monitoreo sin confundirlo con un diagnóstico agronómico.",
           "tip": "El NDVI es una señal de apoyo. Si detectas un problema, registra un reporte para que lo revise un asesor.",
           "steps": {
-            "0": { "title": "Selecciona la parcela", "description": "Usa el selector superior para elegir el lote que deseas revisar." },
-            "1": { "title": "Revisa la observación más reciente", "description": "Consulta la fecha de captura, el vigor vegetal y la superficie registrada con estrés." },
-            "2": { "title": "Observa la evolución", "description": "Compara las observaciones disponibles para detectar cambios durante la campaña." },
-            "3": { "title": "Solicita ayuda cuando sea necesario", "description": "Si observas síntomas o una caída importante, usa Consultar al asesor y describe lo encontrado." }
+            "0": {
+              "title": "Selecciona la parcela",
+              "description": "Usa el selector superior para elegir el lote que deseas revisar."
+            },
+            "1": {
+              "title": "Revisa la observación más reciente",
+              "description": "Consulta la fecha de captura, el vigor vegetal y la superficie registrada con estrés."
+            },
+            "2": {
+              "title": "Observa la evolución",
+              "description": "Compara las observaciones disponibles para detectar cambios durante la campaña."
+            },
+            "3": {
+              "title": "Solicita ayuda cuando sea necesario",
+              "description": "Si observas síntomas o una caída importante, usa Consultar al asesor y describe lo encontrado."
+            }
           }
         },
         "expenses": {
@@ -661,10 +784,22 @@
           "objective": "Mantendrás actualizado el costo de campaña y su punto de equilibrio.",
           "tip": "Registra los gastos el mismo día para evitar olvidos y conservar fechas correctas.",
           "steps": {
-            "0": { "title": "Elige una parcela con campaña", "description": "Los gastos se organizan por parcela y por campaña agrícola." },
-            "1": { "title": "Selecciona el tipo de gasto", "description": "Puedes registrar insumos, mano de obra o transporte y flete." },
-            "2": { "title": "Completa el importe", "description": "Ingresa la descripción, cantidad, precio o jornal y la fecha correspondiente." },
-            "3": { "title": "Consulta el resumen", "description": "Revisa el total invertido, la distribución de costos y el precio estimado para no perder." }
+            "0": {
+              "title": "Elige una parcela con campaña",
+              "description": "Los gastos se organizan por parcela y por campaña agrícola."
+            },
+            "1": {
+              "title": "Selecciona el tipo de gasto",
+              "description": "Puedes registrar insumos, mano de obra o transporte y flete."
+            },
+            "2": {
+              "title": "Completa el importe",
+              "description": "Ingresa la descripción, cantidad, precio o jornal y la fecha correspondiente."
+            },
+            "3": {
+              "title": "Consulta el resumen",
+              "description": "Revisa el total invertido, la distribución de costos y el precio estimado para no perder."
+            }
           }
         },
         "advisor": {
@@ -674,10 +809,22 @@
           "objective": "Prepararás reportes útiles que faciliten la revisión y una recomendación responsable.",
           "tip": "No apliques productos únicamente por una imagen; espera la evaluación y receta del profesional.",
           "steps": {
-            "0": { "title": "Describe los síntomas", "description": "Indica qué observas, desde cuándo ocurre y en qué parte del cultivo aparece." },
-            "1": { "title": "Indica la severidad", "description": "Selecciona un nivel acorde con la extensión y el daño que observas." },
-            "2": { "title": "Adjunta una evidencia clara", "description": "Si tienes una fotografía, procura que esté enfocada y muestre hojas, tallos o tubérculos afectados." },
-            "3": { "title": "Sigue el estado del reporte", "description": "Consulta si está pendiente, inspeccionado o resuelto y revisa la receta emitida." }
+            "0": {
+              "title": "Describe los síntomas",
+              "description": "Indica qué observas, desde cuándo ocurre y en qué parte del cultivo aparece."
+            },
+            "1": {
+              "title": "Indica la severidad",
+              "description": "Selecciona un nivel acorde con la extensión y el daño que observas."
+            },
+            "2": {
+              "title": "Adjunta una evidencia clara",
+              "description": "Si tienes una fotografía, procura que esté enfocada y muestre hojas, tallos o tubérculos afectados."
+            },
+            "3": {
+              "title": "Sigue el estado del reporte",
+              "description": "Consulta si está pendiente, inspeccionado o resuelto y revisa la receta emitida."
+            }
           }
         },
         "alerts": {
@@ -687,12 +834,30 @@
           "objective": "Distinguirás una notificación leída de un riesgo realmente atendido.",
           "tip": "Completa las medidas en el orden mostrado; el plan solo puede finalizar cuando todas estén confirmadas.",
           "steps": {
-            "0": { "title": "Selecciona la parcela", "description": "Las alertas se filtran usando la región de la parcela seleccionada." },
-            "1": { "title": "Revisa la severidad", "description": "Lee el origen, la última actualización y el nivel del riesgo antes de actuar." },
-            "2": { "title": "Abre el plan de acción", "description": "Selecciona Ver plan de acción para consultar las medidas recomendadas." },
-            "3": { "title": "Confirma las medidas en orden", "description": "Realiza cada actividad y confírmala. El progreso avanzará automáticamente." },
-            "4": { "title": "Consulta el cronograma", "description": "Revisa las horas y los hitos operativos para saber cuál es la tarea actual." },
-            "5": { "title": "Finaliza y revisa el reporte", "description": "Cuando el progreso llegue al 100 %, finaliza el plan y conserva el resumen de implementación." }
+            "0": {
+              "title": "Selecciona la parcela",
+              "description": "Las alertas se filtran usando la región de la parcela seleccionada."
+            },
+            "1": {
+              "title": "Revisa la severidad",
+              "description": "Lee el origen, la última actualización y el nivel del riesgo antes de actuar."
+            },
+            "2": {
+              "title": "Abre el plan de acción",
+              "description": "Selecciona Ver plan de acción para consultar las medidas recomendadas."
+            },
+            "3": {
+              "title": "Confirma las medidas en orden",
+              "description": "Realiza cada actividad y confírmala. El progreso avanzará automáticamente."
+            },
+            "4": {
+              "title": "Consulta el cronograma",
+              "description": "Revisa las horas y los hitos operativos para saber cuál es la tarea actual."
+            },
+            "5": {
+              "title": "Finaliza y revisa el reporte",
+              "description": "Cuando el progreso llegue al 100 %, finaliza el plan y conserva el resumen de implementación."
+            }
           }
         },
         "certificates": {
@@ -702,10 +867,22 @@
           "objective": "Aprenderás a consultar y presentar un certificado verificable de tu cosecha.",
           "tip": "El comprador puede escanear el código QR para verificar públicamente el documento.",
           "steps": {
-            "0": { "title": "Abre Certificados de cosecha", "description": "Encontrarás los documentos emitidos para tus lotes evaluados." },
-            "1": { "title": "Selecciona un certificado", "description": "Revisa el producto, lote, fecha, clasificación técnica y entidad emisora." },
-            "2": { "title": "Muestra el código QR", "description": "Permite que el comprador escanee el código para comprobar la autenticidad." },
-            "3": { "title": "Descarga o abre la ficha pública", "description": "Guarda el documento o utiliza el enlace público para compartir la verificación." }
+            "0": {
+              "title": "Abre Certificados de cosecha",
+              "description": "Encontrarás los documentos emitidos para tus lotes evaluados."
+            },
+            "1": {
+              "title": "Selecciona un certificado",
+              "description": "Revisa el producto, lote, fecha, clasificación técnica y entidad emisora."
+            },
+            "2": {
+              "title": "Muestra el código QR",
+              "description": "Permite que el comprador escanee el código para comprobar la autenticidad."
+            },
+            "3": {
+              "title": "Descarga o abre la ficha pública",
+              "description": "Guarda el documento o utiliza el enlace público para compartir la verificación."
+            }
           }
         }
       }
@@ -959,7 +1136,12 @@
     "ch-prescribe": "Emitir receta técnica",
     "pr-settings": "Configuración y ayuda",
     "pr-cooperative-dashboard": "Dashboard institucional",
-    "pr-cooperative-settings": "Configuración institucional"
+    "pr-cooperative-settings": "Configuración institucional",
+    "fm-plot-detail": "Detalle de la parcela",
+    "fm-plot-soil": "Análisis de suelo",
+    "fm-campaigns": "Mis campañas",
+    "fm-campaign-new": "Iniciar una campaña",
+    "fm-reports": "Reportes de costos"
   },
   "errors": {
     "network": "No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.",
