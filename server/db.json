@@ -158,7 +158,13 @@
         ]
       ],
       "areaHectares": 1.8,
-      "agroMonitoringPolygonId": "5f9a1c2b7e1d3a0012ab34cf"
+      "agroMonitoringPolygonId": "5f9a1c2b7e1d3a0012ab34cf",
+      "soilBaseline": {
+        "ph": 6.1,
+        "texture": "CLAY_LOAM",
+        "organicMatterPercentage": 3.4,
+        "recordedAt": "2026-02-10"
+      }
     },
     {
       "id": 6,
