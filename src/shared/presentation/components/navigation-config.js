@@ -57,6 +57,7 @@ export const agronomistNavigationSections = [
     {
         title: 'section.agricultural-operation',
         options: [
+            { link: '/crop-health/assigned-plots', label: 'option.assigned-plots', icon: 'pi pi-map' },
             { link: '/crop-health/inbox', label: 'option.diagnosis-inbox', icon: 'pi pi-inbox' },
             { link: '/crop-health/inspections', label: 'option.field-inspections', icon: 'pi pi-map-marker' },
             { link: '/crop-health/prescriptions', label: 'option.prescriptions', icon: 'pi pi-file-edit' },
