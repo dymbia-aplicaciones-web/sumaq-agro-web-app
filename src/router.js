@@ -5,6 +5,7 @@ import fieldManagementRoutes from "./field-management/presentation/field-managem
 import cropHealthRoutes from "./crop-health/presentation/crop-health-routes.js";
 import profilesRoutes from "./profiles/presentation/profiles-routes.js";
 import harvestCertificationRoutes, {publicTraceabilityRoutes} from "./harvest-certification/presentation/harvest-certification-routes.js";
+import subscriptionsRoutes from "./subscriptions/presentation/subscriptions-routes.js";
 import {authenticationGuard} from "./iam/infrastructure/authentication.guard.js";
 
 // Define lazy-loaded components for routes
@@ -30,6 +31,7 @@ const routes = [
             { path: 'crop-health',            children: cropHealthRoutes },
             { path: 'profiles',               children: profilesRoutes },
             { path: 'harvest-certification',  children: harvestCertificationRoutes },
+            { path: 'subscriptions',          children: subscriptionsRoutes },
             { path: 'forbidden',              name: 'forbidden',              component: forbidden,    meta: { title: 'routes.forbidden' } },
             { path: ':pathMatch(.*)*',        name: 'not-found',              component: pageNotFound, meta: { title: 'routes.not-found' } }
         ]

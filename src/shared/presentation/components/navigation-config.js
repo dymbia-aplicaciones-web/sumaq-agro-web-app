@@ -22,6 +22,7 @@ export const farmerNavigationSections = [
         title: 'section.system',
         options: [
             { link: '/crop-health/alerts', label: 'option.alerts', icon: 'pi pi-bell' },
+            { link: '/subscriptions/billing', label: 'subscriptions.nav-title', icon: 'pi pi-credit-card' },
             { link: '/profiles/settings', label: 'option.settings', icon: 'pi pi-cog' }
         ]
     }
@@ -44,7 +45,10 @@ export const cooperativeDirectorNavigationSections = [
     },
     {
         title: 'section.system',
-        options: [{ link: '/profiles/cooperative/settings', label: 'option.cooperative-settings', icon: 'pi pi-cog' }]
+        options: [
+            { link: '/subscriptions/billing', label: 'subscriptions.nav-title', icon: 'pi pi-credit-card' },
+            { link: '/profiles/cooperative/settings', label: 'option.cooperative-settings', icon: 'pi pi-cog' }
+        ]
     }
 ];
 
@@ -59,6 +63,10 @@ export const agronomistNavigationSections = [
             { link: '/crop-health/monitoring', label: 'option.crop-health', icon: 'pi pi-sun' },
             { link: '/crop-health/alerts', label: 'option.alerts', icon: 'pi pi-exclamation-triangle' }
         ]
+    },
+    {
+        title: 'section.system',
+        options: [{ link: '/subscriptions/billing', label: 'subscriptions.nav-title', icon: 'pi pi-credit-card' }]
     }
 ];
 
