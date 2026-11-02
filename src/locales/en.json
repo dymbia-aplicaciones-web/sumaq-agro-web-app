@@ -691,29 +691,12 @@
     },
     "settings": {
       "title": "Account Settings and Farmer Support",
-      "subtitle": "Review and update your plot and account information.",
-      "plot-tab": "My Plot Data",
+      "subtitle": "Manage your account and find guidance for using SumaqAgro.",
       "account-tab": "Account",
       "help-tab": "Help Manuals",
-      "select-plot": "Plot to configure",
-      "plot-name": "Plot name",
-      "primary-crop": "Primary crop",
-      "declared-area": "Total declared area",
-      "location": "Account location",
-      "assigned-advisor": "Assigned advisory engineer",
-      "no-advisor": "No advisor assigned",
-      "support-question": "Do you need help with the platform?",
-      "call-support": "Call SumaqAgro Support",
-      "support-unavailable": "The support number has not been configured yet.",
-      "save-changes": "Save changes",
-      "plot-required": "Select a plot.",
-      "name-required": "The plot name is required.",
-      "region-required": "The location is required.",
-      "plot-saved": "Plot details saved.",
-      "no-plots": "You do not have registered plots to configure yet.",
-      "contact-title": "Contact Details",
+      "contact-title": "Personal and contact information",
       "phone": "Phone number",
-      "email": "Email address",
+      "email": "Contact email",
       "phone-error": "Enter a valid phone number.",
       "email-error": "Enter a valid email address.",
       "saving": "Saving...",
@@ -721,190 +704,99 @@
       "current-password": "Current password",
       "new-password": "New password",
       "confirm-password": "Confirm new password",
-      "security-description": "Password changes will be available when platform authentication is added.",
+      "security-description": "Use your sign-in email to request a password reset through the account recovery flow.",
       "change-password": "Change password",
-      "saved": "Contact data saved.",
-      "password-unavailable": "Password change will be available when IAM is implemented."
-    },
-    "help": {
-      "title": "Farmer help manuals",
-      "subtitle": "Find short instructions for SumaqAgro's main tasks.",
-      "search": "Search manuals...",
-      "reading-time": "{minutes} min read",
-      "step-of": "Step {current} of {total}",
-      "previous": "Previous",
-      "next": "Next",
-      "go-to-feature": "Go to feature",
-      "cant-find": "Can't find what you're looking for?",
-      "contact-support": "Contact technical support",
-      "consult-advisor": "Consult the advisor",
-      "no-results-title": "No manual found",
-      "no-results-description": "Try another search or contact support.",
-      "status": {
-        "NOT_STARTED": "Not viewed",
-        "IN_PROGRESS": "Reading",
-        "COMPLETED": "Reviewed"
-      },
-      "manuals": {
-        "plot": {
-          "title": "Register and configure my plot",
-          "description": "Create a plot, enter its details and delineate the land.",
-          "keywords": "plot land map area location registration",
-          "objective": "You will finish with a plot ready for monitoring and the other modules.",
-          "tip": "Mark the perimeter by walking the land or selecting its corners on the map.",
-          "steps": {
-            "0": {
-              "title": "Open My Plots",
-              "description": "Open My Plot and select View all plots to see the available slots in your plan."
-            },
-            "1": {
-              "title": "Enter the general details",
-              "description": "Provide the name, region, crop, variety, sowing date and estimated area."
-            },
-            "2": {
-              "title": "Delineate the land",
-              "description": "Mark at least three corners on the map to form a perimeter without crossing sides."
-            },
-            "3": {
-              "title": "Save and select the plot",
-              "description": "Confirm registration and select the plot for the dashboard, crop health and alerts."
-            }
-          }
+      "saved": "Account details saved.",
+      "profile-title": "Your farmer account",
+      "farmer-role": "Farmer",
+      "manage-plots": "Manage my plots",
+      "contact-description": "Update your contact details. Your contact email does not change your sign-in email.",
+      "preview": "Account recovery currently runs as a preview: it does not send emails or change passwords.",
+      "preferences": "Preferences",
+      "language": "Application language",
+      "language-description": "The language applies during this visit. You can also change it in the side menu.",
+      "help-title": "Learn to use SumaqAgro",
+      "help-description": "Follow the steps for each task and open its section to try it.",
+      "search": "Search guides",
+      "clear": "Clear search",
+      "open-section": "Open section",
+      "no-results": "No guides found. Try plot, expenses, alerts or connection.",
+      "faq-title": "Frequently asked questions",
+      "guides": {
+        "plots": {
+          "title": "Register and view plots",
+          "summary": "Keep your land information organized.",
+          "steps": [
+            "Open My plots and choose to register a plot.",
+            "Enter the plot details and draw its boundary on the map.",
+            "Save and open the plot details or soil analysis."
+          ]
         },
-        "health": {
-          "title": "Using the Crop Health tool",
-          "description": "Review vegetation vigor, observations and possible stress areas.",
-          "keywords": "health ndvi satellite stress crop monitoring",
-          "objective": "Learn to interpret monitoring data without treating it as an agronomic diagnosis.",
-          "tip": "NDVI is a supporting signal. Report visible symptoms so an advisor can review them.",
-          "steps": {
-            "0": {
-              "title": "Select the plot",
-              "description": "Use the top selector to choose the plot you want to inspect."
-            },
-            "1": {
-              "title": "Review the latest observation",
-              "description": "Check its capture date, vegetation vigor and recorded stress area."
-            },
-            "2": {
-              "title": "Observe the trend",
-              "description": "Compare available observations to identify changes during the season."
-            },
-            "3": {
-              "title": "Ask for help when needed",
-              "description": "If you see symptoms or a large decline, consult the advisor and describe your findings."
-            }
-          }
+        "campaigns": {
+          "title": "Start a campaign",
+          "summary": "Organize the production cycle of your plot.",
+          "steps": [
+            "Register your plot first.",
+            "Open Campaigns and start one with its plot, crop and sowing date.",
+            "Check the details before saving and use the history to follow progress."
+          ]
         },
         "expenses": {
-          "title": "Expense and earnings management",
-          "description": "Record costs and calculate the minimum price needed to recover your investment.",
-          "keywords": "expenses sales costs inputs labor freight earnings",
-          "objective": "Keep the campaign cost and breakeven point up to date.",
-          "tip": "Record expenses on the same day to avoid omissions and preserve accurate dates.",
-          "steps": {
-            "0": {
-              "title": "Choose a plot with a campaign",
-              "description": "Expenses are organized by plot and agricultural campaign."
-            },
-            "1": {
-              "title": "Select the expense type",
-              "description": "Record inputs, labor, transport or freight."
-            },
-            "2": {
-              "title": "Enter the amount",
-              "description": "Provide the description, quantity, price or daily wage and its date."
-            },
-            "3": {
-              "title": "Review the summary",
-              "description": "Check total investment, cost distribution and the estimated breakeven price."
-            }
-          }
+          "title": "Record expenses and review costs",
+          "summary": "Track campaign inputs, labor and freight.",
+          "steps": [
+            "Select the relevant plot and campaign.",
+            "In My expenses choose inputs, labor or freight and fill in the form.",
+            "Save the expense and review the summary and cost reports."
+          ]
         },
-        "advisor": {
-          "title": "Consulting advisors: best practices",
-          "description": "Submit a clear report to receive technical guidance.",
-          "keywords": "advisor agronomist pest disease consultation report photo",
-          "objective": "Prepare useful reports that support a responsible technical recommendation.",
-          "tip": "Do not apply products based only on an image; wait for the professional assessment and prescription.",
-          "steps": {
-            "0": {
-              "title": "Describe the symptoms",
-              "description": "Explain what you see, when it started and where it appears on the crop."
-            },
-            "1": {
-              "title": "Indicate severity",
-              "description": "Choose a level that reflects the extent and damage you observe."
-            },
-            "2": {
-              "title": "Attach clear evidence",
-              "description": "If you have a photo, ensure it is focused and shows the affected plant parts."
-            },
-            "3": {
-              "title": "Follow the report",
-              "description": "Check whether it is pending, inspected or resolved and review the issued prescription."
-            }
-          }
-        },
-        "alerts": {
-          "title": "Understanding agricultural alerts",
-          "description": "Address weather and phytosanitary risks through an ordered plan.",
-          "keywords": "alert frost rain drought weevil risk timeline tasks",
-          "objective": "Understand the difference between reading a notification and addressing its risk.",
-          "tip": "Complete measures in order; the plan can only finish after all of them are confirmed.",
-          "steps": {
-            "0": {
-              "title": "Select the plot",
-              "description": "Alerts are filtered using the region of the selected plot."
-            },
-            "1": {
-              "title": "Review severity",
-              "description": "Read the source, latest update and risk level before acting."
-            },
-            "2": {
-              "title": "Open the action plan",
-              "description": "Select View action plan to see the recommended measures."
-            },
-            "3": {
-              "title": "Confirm measures in order",
-              "description": "Perform and confirm each activity. Progress updates automatically."
-            },
-            "4": {
-              "title": "Review the timeline",
-              "description": "Check operating times and milestones to identify the current task."
-            },
-            "5": {
-              "title": "Finalize and review the report",
-              "description": "At 100% progress, finalize the plan and keep its implementation summary."
-            }
-          }
+        "health": {
+          "title": "Review crop health and alerts",
+          "summary": "Review indicators and report field problems.",
+          "steps": [
+            "Select the plot you want to review in Crop health.",
+            "Check available indicators and alerts for that plot.",
+            "If you find a problem, use Report pest and follow up on the case."
+          ]
         },
         "certificates": {
-          "title": "Harvest certificates",
-          "description": "Review and share origin and quality documents.",
-          "keywords": "certificate harvest quality origin qr buyer",
-          "objective": "Learn how to review and present a verifiable harvest certificate.",
-          "tip": "The buyer can scan the QR code to verify the document publicly.",
-          "steps": {
-            "0": {
-              "title": "Open Harvest Certificates",
-              "description": "You will find documents issued for your evaluated batches."
-            },
-            "1": {
-              "title": "Select a certificate",
-              "description": "Review the product, batch, date, technical grading and issuer."
-            },
-            "2": {
-              "title": "Show the QR code",
-              "description": "Let the buyer scan it to confirm authenticity."
-            },
-            "3": {
-              "title": "Download or open the public record",
-              "description": "Save the document or share its public verification link."
-            }
-          }
+          "title": "View certificates",
+          "summary": "Find quality and traceability information.",
+          "steps": [
+            "Open Certificates and review the available batches.",
+            "Select a record to check its information and status.",
+            "If a certificate has been issued, use its available link or QR for public verification."
+          ]
+        },
+        "offline": {
+          "title": "Work with an unstable connection",
+          "summary": "Check which records are pending.",
+          "steps": [
+            "Open the application online and select the plot and campaign.",
+            "When recording an expense offline, check that it appears as pending synchronization.",
+            "When connection returns, check the synchronization notice and verify there are no remaining pending operations."
+          ]
         }
-      }
+      },
+      "faq": {
+        "connection": {
+          "question": "Can I use the whole application offline?",
+          "answer": "No. Some field operations, such as recording expenses, support a pending queue. API queries and account updates need a connection. Check the synchronization indicator before closing the application."
+        },
+        "contact": {
+          "question": "Does changing my contact email change my login?",
+          "answer": "No. Your contact email belongs to your profile. To recover access, use the sign-in email shown in your account summary."
+        },
+        "alerts": {
+          "question": "Does an alert replace an agronomist assessment?",
+          "answer": "Alerts help you decide what to inspect. Read the details, check conditions in the field and seek technical advice when needed."
+        }
+      },
+      "first-name": "First name",
+      "last-name": "Last name",
+      "name-error": "Enter a valid name up to 100 characters.",
+      "edit-account": "Edit account",
+      "cancel": "Cancel"
     },
     "advisors": {
       "invite-title": "Invite New Agronomy Advisor",
@@ -958,6 +850,24 @@
       "subscription-title": "Institutional Subscription Plan",
       "subscription-description": "Membership, hectare limits and billing management",
       "coming-soon": "Coming soon."
+    },
+    "advisory": {
+      "title": "Responsible plot advisor",
+      "unassigned": "This plot has no assigned advisor yet.",
+      "unavailable": "The assigned professional is unavailable in the current catalogue. You may select another.",
+      "demo-notice": "Demo assignment: this does not purchase or activate a plan. Access validation and acceptance will be implemented in the backend.",
+      "select": "Select agronomist",
+      "confirm": "Confirm this responsible advisor? Previous assignments will remain in the history.",
+      "confirm-button": "Confirm assignment",
+      "assign": "Assign or change advisor",
+      "no-advisors": "No professionals with a linked account are available.",
+      "saved": "Advisor assigned successfully.",
+      "errors": {
+        "load": "Advisors and assignments could not be loaded.",
+        "save": "Assignment could not be saved. Your selection is preserved for retry.",
+        "denied": "You may only assign available advisors to your own plots.",
+        "conflict": "Duplicate assignments were found for this plot. Request a data review."
+      }
     }
   },
   "harvest-certification": {

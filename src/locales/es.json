@@ -691,29 +691,12 @@
     },
     "settings": {
       "title": "Ajustes de Cuenta y Asistencia al Agricultor",
-      "subtitle": "Revisa y actualiza los datos de tu parcela y cuenta.",
-      "plot-tab": "Datos de mi Parcela",
+      "subtitle": "Administra tu cuenta y encuentra orientación para usar SumaqAgro.",
       "account-tab": "Cuenta",
       "help-tab": "Manuales de Ayuda",
-      "select-plot": "Parcela a configurar",
-      "plot-name": "Nombre de la parcela",
-      "primary-crop": "Cultivo principal",
-      "declared-area": "Área total declarada",
-      "location": "Ubicación de la cuenta",
-      "assigned-advisor": "Ingeniero asesor asignado",
-      "no-advisor": "Sin asesor asignado",
-      "support-question": "¿Necesitas ayuda con la plataforma?",
-      "call-support": "Llamar a Soporte SumaqAgro",
-      "support-unavailable": "El número de soporte aún no está configurado.",
-      "save-changes": "Guardar cambios",
-      "plot-required": "Selecciona una parcela.",
-      "name-required": "El nombre de la parcela es obligatorio.",
-      "region-required": "La ubicación es obligatoria.",
-      "plot-saved": "Datos de la parcela guardados.",
-      "no-plots": "Aún no tienes parcelas registradas para configurar.",
-      "contact-title": "Datos de Contacto",
+      "contact-title": "Información personal y de contacto",
       "phone": "Número de teléfono",
-      "email": "Correo electrónico",
+      "email": "Correo de contacto",
       "phone-error": "Ingresa un teléfono válido.",
       "email-error": "Ingresa un correo válido.",
       "saving": "Guardando...",
@@ -721,190 +704,99 @@
       "current-password": "Contraseña actual",
       "new-password": "Nueva contraseña",
       "confirm-password": "Confirmar nueva contraseña",
-      "security-description": "El cambio de contraseña estará disponible cuando se incorpore la autenticación de la plataforma.",
+      "security-description": "Usa tu correo de inicio de sesión para solicitar el restablecimiento de tu contraseña mediante el flujo de recuperación de acceso.",
       "change-password": "Cambiar contraseña",
-      "saved": "Datos de contacto guardados.",
-      "password-unavailable": "El cambio de contraseña estará disponible al implementar IAM."
-    },
-    "help": {
-      "title": "Manuales de ayuda para el agricultor",
-      "subtitle": "Encuentra instrucciones breves para realizar las tareas principales de SumaqAgro.",
-      "search": "Buscar manual...",
-      "reading-time": "{minutes} min de lectura",
-      "step-of": "Paso {current} de {total}",
-      "previous": "Anterior",
-      "next": "Siguiente",
-      "go-to-feature": "Ir a la funcionalidad",
-      "cant-find": "¿No encuentras lo que estás buscando?",
-      "contact-support": "Contactar soporte técnico",
-      "consult-advisor": "Consultar al asesor",
-      "no-results-title": "No encontramos un manual",
-      "no-results-description": "Prueba otra búsqueda o comunícate con soporte.",
-      "status": {
-        "NOT_STARTED": "No consultado",
-        "IN_PROGRESS": "En lectura",
-        "COMPLETED": "Revisado"
-      },
-      "manuals": {
-        "plot": {
-          "title": "Registrar y configurar mi parcela",
-          "description": "Crea una parcela, registra sus datos y delimita el terreno.",
-          "keywords": "parcela terreno mapa área ubicación registro",
-          "objective": "Al terminar tendrás una parcela lista para usar el monitoreo y los demás módulos.",
-          "tip": "Marca el perímetro caminando por el terreno o seleccionando sus esquinas en el mapa.",
-          "steps": {
-            "0": {
-              "title": "Abre Mis Parcelas",
-              "description": "Ingresa a Mi parcela y selecciona Ver todos mis lotes. Allí verás los cupos disponibles de tu plan."
-            },
-            "1": {
-              "title": "Registra los datos generales",
-              "description": "Escribe el nombre, región, cultivo, variedad, fecha de siembra y área estimada."
-            },
-            "2": {
-              "title": "Delimita el terreno",
-              "description": "Marca al menos tres esquinas sobre el mapa hasta formar un perímetro sin cruces."
-            },
-            "3": {
-              "title": "Guarda y selecciona la parcela",
-              "description": "Confirma el registro y elige la parcela para verla en el dashboard, salud de cultivo y alertas."
-            }
-          }
+      "saved": "Datos de tu cuenta guardados.",
+      "profile-title": "Tu cuenta de agricultor",
+      "farmer-role": "Agricultor",
+      "manage-plots": "Administrar mis parcelas",
+      "contact-description": "Actualiza tus datos de contacto. El correo de contacto no modifica el correo con el que inicias sesión.",
+      "preview": "La recuperación funciona actualmente como vista previa: no envía correos ni cambia contraseñas.",
+      "preferences": "Preferencias",
+      "language": "Idioma de la aplicación",
+      "language-description": "El idioma se aplica durante esta visita. Puedes cambiarlo también desde el menú lateral.",
+      "help-title": "Aprende a usar SumaqAgro",
+      "help-description": "Consulta los pasos de cada tarea y abre su sección para ponerlos en práctica.",
+      "search": "Buscar una guía",
+      "clear": "Limpiar búsqueda",
+      "open-section": "Ir a la sección",
+      "no-results": "No encontramos guías. Prueba con parcela, gastos, alertas o conexión.",
+      "faq-title": "Preguntas frecuentes",
+      "guides": {
+        "plots": {
+          "title": "Registrar y consultar parcelas",
+          "summary": "Mantén organizada la información de tus terrenos.",
+          "steps": [
+            "Abre Mis parcelas y selecciona registrar una parcela.",
+            "Completa los datos del terreno y delimita su polígono en el mapa.",
+            "Guarda y consulta el detalle o el análisis de suelo desde la parcela."
+          ]
         },
-        "health": {
-          "title": "Uso de Salud del Cultivo",
-          "description": "Consulta vigor vegetal, observaciones y zonas de posible estrés.",
-          "keywords": "salud ndvi satélite estrés cultivo monitoreo",
-          "objective": "Aprenderás a interpretar el monitoreo sin confundirlo con un diagnóstico agronómico.",
-          "tip": "El NDVI es una señal de apoyo. Si detectas un problema, registra un reporte para que lo revise un asesor.",
-          "steps": {
-            "0": {
-              "title": "Selecciona la parcela",
-              "description": "Usa el selector superior para elegir el lote que deseas revisar."
-            },
-            "1": {
-              "title": "Revisa la observación más reciente",
-              "description": "Consulta la fecha de captura, el vigor vegetal y la superficie registrada con estrés."
-            },
-            "2": {
-              "title": "Observa la evolución",
-              "description": "Compara las observaciones disponibles para detectar cambios durante la campaña."
-            },
-            "3": {
-              "title": "Solicita ayuda cuando sea necesario",
-              "description": "Si observas síntomas o una caída importante, usa Consultar al asesor y describe lo encontrado."
-            }
-          }
+        "campaigns": {
+          "title": "Iniciar una campaña",
+          "summary": "Organiza el ciclo de producción de tu parcela.",
+          "steps": [
+            "Registra primero tu parcela.",
+            "Abre Campañas e inicia una campaña con su parcela, cultivo y fecha de siembra.",
+            "Revisa los datos antes de guardar y consulta el historial para dar seguimiento."
+          ]
         },
         "expenses": {
-          "title": "Gestión de gastos y ganancias",
-          "description": "Registra costos y consulta el precio mínimo para recuperar tu inversión.",
-          "keywords": "gastos ventas costos insumos jornales flete ganancias",
-          "objective": "Mantendrás actualizado el costo de campaña y su punto de equilibrio.",
-          "tip": "Registra los gastos el mismo día para evitar olvidos y conservar fechas correctas.",
-          "steps": {
-            "0": {
-              "title": "Elige una parcela con campaña",
-              "description": "Los gastos se organizan por parcela y por campaña agrícola."
-            },
-            "1": {
-              "title": "Selecciona el tipo de gasto",
-              "description": "Puedes registrar insumos, mano de obra o transporte y flete."
-            },
-            "2": {
-              "title": "Completa el importe",
-              "description": "Ingresa la descripción, cantidad, precio o jornal y la fecha correspondiente."
-            },
-            "3": {
-              "title": "Consulta el resumen",
-              "description": "Revisa el total invertido, la distribución de costos y el precio estimado para no perder."
-            }
-          }
+          "title": "Registrar gastos y consultar costos",
+          "summary": "Controla insumos, jornales y fletes de campaña.",
+          "steps": [
+            "Selecciona la parcela y campaña correspondientes.",
+            "En Mis gastos elige insumos, jornales o fletes y completa el formulario.",
+            "Guarda el gasto y revisa el resumen y los reportes de costos."
+          ]
         },
-        "advisor": {
-          "title": "Consultar al asesor: buenas prácticas",
-          "description": "Envía un reporte claro para recibir orientación técnica.",
-          "keywords": "asesor ingeniero plaga enfermedad consulta reporte foto",
-          "objective": "Prepararás reportes útiles que faciliten la revisión y una recomendación responsable.",
-          "tip": "No apliques productos únicamente por una imagen; espera la evaluación y receta del profesional.",
-          "steps": {
-            "0": {
-              "title": "Describe los síntomas",
-              "description": "Indica qué observas, desde cuándo ocurre y en qué parte del cultivo aparece."
-            },
-            "1": {
-              "title": "Indica la severidad",
-              "description": "Selecciona un nivel acorde con la extensión y el daño que observas."
-            },
-            "2": {
-              "title": "Adjunta una evidencia clara",
-              "description": "Si tienes una fotografía, procura que esté enfocada y muestre hojas, tallos o tubérculos afectados."
-            },
-            "3": {
-              "title": "Sigue el estado del reporte",
-              "description": "Consulta si está pendiente, inspeccionado o resuelto y revisa la receta emitida."
-            }
-          }
-        },
-        "alerts": {
-          "title": "Interpretación de alertas agrícolas",
-          "description": "Atiende riesgos climáticos y fitosanitarios siguiendo un plan ordenado.",
-          "keywords": "alerta helada lluvia sequía gorgojo riesgo cronograma tareas",
-          "objective": "Distinguirás una notificación leída de un riesgo realmente atendido.",
-          "tip": "Completa las medidas en el orden mostrado; el plan solo puede finalizar cuando todas estén confirmadas.",
-          "steps": {
-            "0": {
-              "title": "Selecciona la parcela",
-              "description": "Las alertas se filtran usando la región de la parcela seleccionada."
-            },
-            "1": {
-              "title": "Revisa la severidad",
-              "description": "Lee el origen, la última actualización y el nivel del riesgo antes de actuar."
-            },
-            "2": {
-              "title": "Abre el plan de acción",
-              "description": "Selecciona Ver plan de acción para consultar las medidas recomendadas."
-            },
-            "3": {
-              "title": "Confirma las medidas en orden",
-              "description": "Realiza cada actividad y confírmala. El progreso avanzará automáticamente."
-            },
-            "4": {
-              "title": "Consulta el cronograma",
-              "description": "Revisa las horas y los hitos operativos para saber cuál es la tarea actual."
-            },
-            "5": {
-              "title": "Finaliza y revisa el reporte",
-              "description": "Cuando el progreso llegue al 100 %, finaliza el plan y conserva el resumen de implementación."
-            }
-          }
+        "health": {
+          "title": "Consultar salud y alertas",
+          "summary": "Revisa indicadores y reporta problemas en campo.",
+          "steps": [
+            "Selecciona la parcela que deseas revisar en Salud del cultivo.",
+            "Consulta los indicadores disponibles y las alertas de esa parcela.",
+            "Si detectas un problema, usa Reportar plaga y revisa después el seguimiento del caso."
+          ]
         },
         "certificates": {
-          "title": "Certificados de cosecha",
-          "description": "Consulta y comparte documentos de origen y calidad.",
-          "keywords": "certificado cosecha calidad origen qr comprador",
-          "objective": "Aprenderás a consultar y presentar un certificado verificable de tu cosecha.",
-          "tip": "El comprador puede escanear el código QR para verificar públicamente el documento.",
-          "steps": {
-            "0": {
-              "title": "Abre Certificados de cosecha",
-              "description": "Encontrarás los documentos emitidos para tus lotes evaluados."
-            },
-            "1": {
-              "title": "Selecciona un certificado",
-              "description": "Revisa el producto, lote, fecha, clasificación técnica y entidad emisora."
-            },
-            "2": {
-              "title": "Muestra el código QR",
-              "description": "Permite que el comprador escanee el código para comprobar la autenticidad."
-            },
-            "3": {
-              "title": "Descarga o abre la ficha pública",
-              "description": "Guarda el documento o utiliza el enlace público para compartir la verificación."
-            }
-          }
+          "title": "Consultar certificados",
+          "summary": "Encuentra información de calidad y trazabilidad.",
+          "steps": [
+            "Abre Certificados y revisa los lotes disponibles.",
+            "Selecciona un registro para consultar sus datos y estado.",
+            "Si tiene un certificado emitido, consulta su verificación pública mediante el enlace o QR disponible."
+          ]
+        },
+        "offline": {
+          "title": "Trabajar con conexión inestable",
+          "summary": "Comprueba qué registros están pendientes.",
+          "steps": [
+            "Abre la aplicación con conexión y selecciona la parcela y campaña.",
+            "Al registrar un gasto sin conexión, revisa que aparezca como pendiente de sincronización.",
+            "Al recuperar la conexión, revisa el aviso de sincronización y verifica que no queden operaciones pendientes."
+          ]
         }
-      }
+      },
+      "faq": {
+        "connection": {
+          "question": "¿Puedo usar toda la aplicación sin internet?",
+          "answer": "No. Algunas operaciones de campo, como el registro de gastos, admiten una cola pendiente. Las consultas a la API y la actualización de tu cuenta requieren conexión. Revisa el indicador de sincronización antes de cerrar la aplicación."
+        },
+        "contact": {
+          "question": "¿Cambiar mi correo de contacto cambia mi acceso?",
+          "answer": "No. El correo de contacto pertenece a tu perfil. Para recuperar acceso, utiliza el correo con el que inicias sesión, visible en el resumen de tu cuenta."
+        },
+        "alerts": {
+          "question": "¿Una alerta reemplaza la evaluación de un agrónomo?",
+          "answer": "Las alertas orientan la revisión de tu parcela. Consulta el detalle, verifica las condiciones en campo y solicita asesoría técnica cuando corresponda."
+        }
+      },
+      "first-name": "Nombres",
+      "last-name": "Apellidos",
+      "name-error": "Ingresa un nombre válido de hasta 100 caracteres.",
+      "edit-account": "Editar cuenta",
+      "cancel": "Cancelar"
     },
     "advisors": {
       "invite-title": "Invitar Nuevo Asesor Agronómico",
@@ -958,6 +850,24 @@
       "subscription-title": "Plan de Suscripción Institucional",
       "subscription-description": "Gestión de membresía, límites de hectáreas y facturación",
       "coming-soon": "Próximamente disponible."
+    },
+    "advisory": {
+      "title": "Asesor responsable de la parcela",
+      "unassigned": "Esta parcela todavía no tiene un asesor asignado.",
+      "unavailable": "El profesional asignado no está disponible en el catálogo actual. Puedes seleccionar otro.",
+      "demo-notice": "Vinculación de demostración: no compra ni activa un plan. La validación de acceso y aceptación se implementará en el backend.",
+      "select": "Seleccionar agrónomo",
+      "confirm": "¿Confirmas este responsable para la parcela? Se conservará el historial anterior.",
+      "confirm-button": "Confirmar vinculación",
+      "assign": "Vincular o cambiar asesor",
+      "no-advisors": "No hay profesionales con una cuenta vinculada disponibles.",
+      "saved": "Asesor vinculado correctamente.",
+      "errors": {
+        "load": "No se pudieron consultar los asesores y sus asignaciones.",
+        "save": "No se pudo guardar la vinculación. Conservamos tu selección para reintentar.",
+        "denied": "Solo puedes vincular asesores disponibles a tus propias parcelas.",
+        "conflict": "Hay asignaciones duplicadas para esta parcela. Solicita revisar los datos."
+      }
     }
   },
   "harvest-certification": {
