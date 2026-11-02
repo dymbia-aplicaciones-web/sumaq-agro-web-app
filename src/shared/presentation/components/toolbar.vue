@@ -1,15 +1,14 @@
 <script setup>
-import {computed, ref} from "vue";
+import {ref} from "vue";
 import {useI18n} from "vue-i18n";
 import AuthenticationSection from "../../../iam/presentation/components/authentication-section.vue";
 import useLayoutStore from "../../application/layout.store.js";
-import useCropHealthStore from "../../../crop-health/application/crop-health.store.js";
 
 const { t } = useI18n();
 const layoutStore = useLayoutStore();
-const cropHealthStore = useCropHealthStore();
 const search = ref('');
-const notificationCount = computed(() => cropHealthStore.unreadAlertsCount);
+/** Pending notifications. Connected to the agroclimatic alerts later (Angular `Toolbar`). */
+const notificationCount = ref(0);
 </script>
 
 <template>
