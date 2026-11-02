@@ -15,9 +15,6 @@ import useFieldManagementStore from "../../field-management/application/field-ma
 import {FieldManagementApi} from "../../field-management/infrastructure/field-management-api.js";
 import {ProfilesApi} from "../../profiles/infrastructure/profiles-api.js";
 import {PlotAdvisorAssignmentsApi} from "../../profiles/infrastructure/plot-advisor-assignments.api.js";
-import {TechnicalAdvisorAssembler} from "../../profiles/infrastructure/technical-advisor.assembler.js";
-import {CooperativeAssembler} from "../../profiles/infrastructure/cooperative.assembler.js";
-import {CooperativeMemberAssembler} from "../../profiles/infrastructure/cooperative-member.assembler.js";
 import {CropHealthApi} from "../infrastructure/crop-health-api.js";
 import {CaseAssessmentsApi} from "../infrastructure/case-assessments.api.js";
 import {TreatmentFollowUpsApi} from "../infrastructure/treatment-follow-ups.api.js";
@@ -149,13 +146,11 @@ const useCropHealthStore = defineStore('crop-health', () => {
         const source = () => user.experience === 'FARMER'
             ? fields.getPlotsByOwner(user.id).then(scopePlots => ({ plots: scopePlots, advisors: [], advisor: null }))
             : user.experience === 'AGRONOMIST'
-                ? profiles.getAdvisorsByUser(user.id).then(response => {
-                    const advisor = TechnicalAdvisorAssembler.toEntitiesFromResponse(response)[0];
+                ? profiles.getAdvisorByUser(user.id).then(advisor => {
                     if (!advisor) throw new Error('crop-health.errors.advisor-not-assigned');
                     return advisorScope(advisor, user.id);
                 })
-                : profiles.getCooperativesByDirector(user.id).then(response => {
-                    const cooperative = CooperativeAssembler.toEntitiesFromResponse(response)[0];
+                : profiles.getCooperativeByDirector(user.id).then(cooperative => {
                     if (!cooperative) throw new Error('crop-health.errors.no-cooperative');
                     return cooperativeScope(cooperative.id, null);
                 });
@@ -211,11 +206,9 @@ const useCropHealthStore = defineStore('crop-health', () => {
     }
 
     function cooperativeScope(cooperativeId, advisor) {
-        return Promise.all([profiles.getMembersByCooperative(cooperativeId), profiles.getAdvisorsByCooperative(cooperativeId)])
-            .then(([membersResponse, advisorsResponse]) => {
-                const ids = [...new Set(CooperativeMemberAssembler.toEntitiesFromResponse(membersResponse)
-                    .filter(member => member.active).flatMap(member => member.plots.map(plot => plot.id)))];
-                const scopeAdvisors = TechnicalAdvisorAssembler.toEntitiesFromResponse(advisorsResponse);
+        return Promise.all([profiles.getCooperativeMembers(cooperativeId), profiles.getTechnicalAdvisors(cooperativeId)])
+            .then(([members, scopeAdvisors]) => {
+                const ids = [...new Set(members.filter(member => member.active).flatMap(member => member.plots.map(plot => plot.id)))];
                 return (ids.length ? fields.getPlotsByIds(ids) : Promise.resolve([]))
                     .then(scopePlots => ({ plots: scopePlots, advisors: scopeAdvisors, advisor }));
             });
