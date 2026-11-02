@@ -20,14 +20,12 @@ import {FieldInspection} from "../domain/model/field-inspection.entity.js";
 import {TechnicalPrescription} from "../domain/model/technical-prescription.entity.js";
 import {INVALID_DATA, requireDate, todayInLima} from "../domain/model/validation.js";
 import {FieldManagementApi} from "../../field-management/infrastructure/field-management-api.js";
-import {FieldPlotAssembler} from "../../field-management/infrastructure/field-plot.assembler.js";
 import {ProfilesApi} from "../../profiles/infrastructure/profiles-api.js";
 import {TechnicalAdvisorAssembler} from "../../profiles/infrastructure/technical-advisor.assembler.js";
 import {CooperativeAssembler} from "../../profiles/infrastructure/cooperative.assembler.js";
 import {CooperativeMemberAssembler} from "../../profiles/infrastructure/cooperative-member.assembler.js";
 import useFieldManagementStore from "../../field-management/application/field-management.store.js";
 import useIamStore from "../../iam/application/iam.store.js";
-import usePlotSelectionStore from "../../shared/application/plot-selection.store.js";
 
 const cropHealthApi = new CropHealthApi();
 const fieldManagementApi = new FieldManagementApi();
@@ -49,7 +47,6 @@ const denied = () => { throw new Error(NOT_AUTHORIZED); };
 const useCropHealthStore = defineStore('crop-health', () => {
     const iamStore = useIamStore();
     const fieldStore = useFieldManagementStore();
-    const selection = usePlotSelectionStore();
 
     const busy = ref({});
     const errors = ref({});
@@ -74,7 +71,7 @@ const useCropHealthStore = defineStore('crop-health', () => {
         if (!scopeReady.value) return [];
         return canReport.value ? fieldStore.plots.filter(plot => plot.ownerUserId === activeUser.value?.id) : scopePlots.value;
     });
-    const selectedPlot = computed(() => plots.value.find(plot => plot.id === selection.selectedPlotId));
+    const selectedPlot = computed(() => plots.value.find(plot => plot.id === fieldStore.selectedPlotId));
     const observations = computed(() => scopeReady.value ? observationsState.value.filter(item => item.plotId === selectedPlot.value?.id) : []);
     const latestObservation = computed(() => observations.value[0] ?? null);
     const pestReports = computed(() => scopeReady.value ? reportsState.value.filter(report => plots.value.some(plot => plot.id === report.plotId)) : []);
@@ -177,8 +174,8 @@ const useCropHealthStore = defineStore('crop-health', () => {
                     .filter(member => member.active).flatMap(member => member.plots.map(plot => plot.id)))];
                 const scopeAdvisors = TechnicalAdvisorAssembler.toEntitiesFromResponse(advisorsResponse);
                 if (!ids.length) return { plots: [], advisors: scopeAdvisors, advisor };
-                return fieldManagementApi.getPlots().then(plotsResponse => ({
-                    plots: FieldPlotAssembler.toEntitiesFromResponse(plotsResponse).filter(plot => ids.includes(plot.id)),
+                return fieldManagementApi.getPlotsByIds(ids).then(scopePlots => ({
+                    plots: scopePlots,
                     advisors: scopeAdvisors,
                     advisor
                 }));
@@ -214,8 +211,8 @@ const useCropHealthStore = defineStore('crop-health', () => {
             advisorState.value = scope.advisor;
             ready.value = true;
             if (user.experience === 'FARMER') return; // Field Management keeps the farmer's selection.
-            const selected = scope.plots.find(plot => plot.id === selection.selectedPlotId) ?? scope.plots[0];
-            selection.select(selected ? selected.id : null);
+            const selected = scope.plots.find(plot => plot.id === fieldStore.selectedPlotId) ?? scope.plots[0];
+            fieldStore.selectPlotId(selected ? selected.id : null);
         }, 'crop-health.errors.load-plots');
     }
 
@@ -226,7 +223,7 @@ const useCropHealthStore = defineStore('crop-health', () => {
         alertsState.value = [];
         setError('observations', null);
         setError('alerts', null);
-        selection.select(plotId);
+        fieldStore.selectPlotId(plotId);
         if (canReport.value) fieldStore.selectPlot(plotId);
     }
 
