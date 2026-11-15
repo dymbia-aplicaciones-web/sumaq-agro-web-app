@@ -118,9 +118,9 @@ const remove = (id) => store.deleteReport(id, () => {
                   <pv-button v-else outlined icon="pi pi-trash" :label="t('crop-health.delete-report')" :disabled="store.saving" @click="deletingId = report.id"/>
                 </template>
                 <pv-button v-if="store.canSchedule && report.status === 'PENDING'" :label="t('crop-health.schedule-inspection')"
-                           @click="router.push({ path: '/crop-health/inspections', query: { reportId: report.id } })"/>
+                           @click="router.push({ name: 'crop-health-case-inspections', params: { reportId: report.id } })"/>
                 <pv-button v-if="store.canPrescribe && report.status === 'INSPECTED'" outlined :label="t('crop-health.btn-prescribe')"
-                           @click="router.push({ path: '/crop-health/prescribe', query: { reportId: report.id } })"/>
+                           @click="router.push({ name: 'crop-health-case-prescription', params: { reportId: report.id } })"/>
                 <pv-button v-if="store.canAssess(report.id)" outlined :label="t('crop-health.advisor.evaluate')"
                            @click="router.push({ path: `/crop-health/reports/${report.id}`, hash: '#assessment' })"/>
               </div>
