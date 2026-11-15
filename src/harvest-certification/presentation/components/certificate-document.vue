@@ -48,7 +48,7 @@ const dateTime = value => formatDate(value, locale.value, { dateStyle: 'short', 
         </div>
         <div v-else-if="draft">
           <strong>{{ t('harvest-certification.certificate.preliminary-hash') }}:</strong> {{ draft.sha256Hash.slice(0, 18) }}…<br/>
-          <strong>{{ t('harvest-certification.certificate.expected-issuer') }}:</strong> Cristian Santana<br/>
+          <strong>{{ t('harvest-certification.certificate.expected-issuer') }}:</strong> {{ draft.issuerName }}<br/>
           <strong>{{ t('harvest-certification.certificate.preview-date') }}:</strong> {{ dateTime(draft.issuedAt) }}
         </div>
       </div>
