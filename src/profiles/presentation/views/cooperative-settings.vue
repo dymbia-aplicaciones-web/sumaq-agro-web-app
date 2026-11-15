@@ -11,13 +11,13 @@ import {ReassignTechnicalAdvisorCommand} from "../../domain/model/commands/reass
 
 /**
  * Institutional settings of the cooperative: institutional data, technical
- * team and subscription (Angular `CooperativeSettingsView`).
+ * team (Angular `CooperativeSettingsView`).
  */
 const { t } = useI18n();
 const store = useProfilesStore();
 const iamStore = useIamStore();
 
-const tabs = ['cooperative', 'technical-team', 'subscription'];
+const tabs = ['cooperative', 'technical-team'];
 const activeTab = ref('technical-team');
 const fields = ['legalName', 'ruc', 'region', 'headquartersAddress', 'institutionalEmail', 'switchboardPhone', 'legalRepresentative'];
 const form = ref(Object.fromEntries(fields.map(field => [field, ''])));
@@ -147,13 +147,6 @@ const onConfirmRemove = () => {
       </template>
     </pv-card>
 
-    <pv-card v-if="activeTab === 'subscription'" class="settings-card">
-      <template #content>
-        <h2>{{ t('profiles.institutional.subscription-title') }}</h2>
-        <p class="sa-muted mt-1 mb-4">{{ t('profiles.institutional.subscription-description') }}</p>
-        <p>{{ t('profiles.institutional.coming-soon') }}</p>
-      </template>
-    </pv-card>
 
     <p v-if="store.error" class="sa-error m-0" role="alert">{{ store.error }}</p>
 
