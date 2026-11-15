@@ -3,10 +3,9 @@ import {ref, watch} from "vue";
 import {useI18n} from "vue-i18n";
 import {useRoute} from "vue-router";
 import useHarvestCertificationStore from "../../application/harvest-certification.store.js";
-import {formatDate, formatNumber} from "../../../shared/presentation/format.js";
 
 /** Public QR verification (Angular `PublicTraceabilityView`): shown without the shell or a session. */
-const { t, locale } = useI18n();
+const { t } = useI18n();
 const route = useRoute();
 const store = useHarvestCertificationStore();
 
@@ -15,13 +14,13 @@ const loading = ref(true);
 const error = ref(null);
 
 // Each token of the URL starts a new public query.
-watch(() => route.params.token, (token, _, onCleanup) => {
+watch(() => [route.params.token, route.query.hash], ([number, hash], _, onCleanup) => {
   let current = true;
   onCleanup(() => { current = false; });
   loading.value = true;
   error.value = null;
   record.value = null;
-  store.verifyCertificate(String(token ?? ''))
+  store.verifyCertificate(String(number ?? ''), String(hash ?? ''))
       .then(result => {
         if (!current) return;
         if (!result) error.value = 'harvest-certification.trace.unknown-code';
@@ -45,28 +44,21 @@ watch(() => route.params.token, (token, _, onCleanup) => {
         <h1>{{ t('harvest-certification.trace.verification-failed') }}</h1>
         <p role="alert">{{ t(error) }}</p>
       </template>
-      <template v-else-if="record.certificate.isActive() && record.batch">
+      <template v-else-if="record.authentic && record.status === 'ACTIVE'">
         <h1>{{ t('harvest-certification.trace.registered') }}</h1>
-        <p class="status">{{ t('harvest-certification.trace.active') }} · {{ record.certificate.certificateNumber }}</p>
-        <p v-if="record.certificate.isDemo()">{{ t('harvest-certification.trace.demo-data') }}</p>
+        <p class="status">{{ t('harvest-certification.trace.active') }} · {{ record.certificateNumber }}</p>
         <dl>
-          <dt>{{ t('harvest-certification.trace.producer') }}</dt><dd>{{ record.batch.memberName }}</dd>
-          <dt>{{ t('harvest-certification.trace.batch') }}</dt><dd>{{ record.batch.code }}</dd>
-          <dt>{{ t('harvest-certification.trace.product') }}</dt><dd>{{ record.batch.variety }}</dd>
-          <dt>{{ t('harvest-certification.trace.origin') }}</dt><dd>{{ record.batch.plotName }}, {{ record.batch.plotRegion }}</dd>
-          <dt>{{ t('harvest-certification.trace.coordinates') }}</dt><dd>{{ record.batch.coordinates }}</dd>
-          <dt>{{ t('harvest-certification.trace.volume') }}</dt><dd>{{ formatNumber(record.batch.netKg, locale) }} kg</dd>
-          <dt>{{ t('harvest-certification.trace.quality') }}</dt><dd>{{ t(`harvest-certification.quality-category.${record.batch.qualityCategory}`) }}</dd>
-          <dt>{{ t('harvest-certification.trace.issued') }}</dt><dd>{{ formatDate(record.certificate.issuedAt, locale, { dateStyle: 'long' }) }}</dd>
-          <dt>{{ t('harvest-certification.trace.issuer') }}</dt><dd>{{ record.certificate.issuedByName }}</dd>
-          <template v-if="!record.certificate.isDemo()">
-            <dt>{{ t('harvest-certification.trace.registered-hash') }}</dt><dd class="hash">{{ record.certificate.sha256Hash }}</dd>
+          <dt>{{ t('harvest-certification.trace.batch') }}</dt><dd>{{ record.batchCode }}</dd>
+          <dt>{{ t('harvest-certification.trace.product') }}</dt><dd>{{ record.seedVariety || record.cropType }}</dd>
+          <template v-if="record.plotName || record.region">
+            <dt>{{ t('harvest-certification.trace.origin') }}</dt><dd>{{ [record.plotName, record.region].filter(Boolean).join(', ') }}</dd>
           </template>
+          <dt>{{ t('harvest-certification.trace.quality') }}</dt><dd>{{ t(`harvest-certification.quality-category.${record.qualityCategory}`) }}</dd>
         </dl>
       </template>
       <template v-else>
-        <h1>{{ t('harvest-certification.trace.revoked') }}</h1>
-        <p>{{ t('harvest-certification.trace.not-valid') }} {{ record.certificate.revokedReason }}</p>
+        <h1>{{ t('harvest-certification.trace.verification-failed') }}</h1>
+        <p>{{ t('harvest-certification.trace.not-valid') }}</p>
       </template>
     </article>
   </main>

@@ -1,11 +1,10 @@
 <script setup>
-import {computed, nextTick, onMounted, ref, watch} from "vue";
+import {computed, onMounted, ref, watch} from "vue";
 import {useI18n} from "vue-i18n";
 import useHarvestCertificationStore from "../../application/harvest-certification.store.js";
 import useIamStore from "../../../iam/application/iam.store.js";
 import HarvestBatchRegistration from "../components/harvest-batch-registration.vue";
 import HarvestGradingSheet from "../components/harvest-grading-sheet.vue";
-import {printCertificate} from "../components/certificate-print.js";
 import CertificateDocument from "../components/certificate-document.vue";
 import {formatDate, formatNumber} from "../../../shared/presentation/format.js";
 
@@ -80,7 +79,7 @@ const potatoFirstRate = computed(() => {
 });
 const specialtyCoffeeCount = computed(() => store.batches.filter(batch => batch.qualityCategory === 'SPECIALTY_COFFEE').length);
 
-const verificationUrl = certificate => `${window.location.origin}/verify/${encodeURIComponent(certificate.verificationToken)}`;
+const verificationUrl = certificate => `${window.location.origin}/verify/${encodeURIComponent(certificate.certificateNumber)}?hash=${encodeURIComponent(certificate.sha256Hash)}`;
 const farmerQrUrl = certificate => `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(verificationUrl(certificate))}`;
 const toggleFarmerQr = id => visibleQr.value = visibleQr.value === id ? null : id;
 
@@ -149,22 +148,10 @@ const dialogVisible = computed({
   set: visible => { if (!visible) dialog.value = 'closed'; }
 });
 
-const print = async () => {
-  await nextTick();
-  const documentElement = document.getElementById('print-certificate');
-  if (documentElement && selectedCertificate.value) await printCertificate(documentElement);
-};
-
-const printFarmerCertificate = async certificate => {
-  selectedCertificate.value = certificate;
-  selectedBatch.value = store.batches.find(batch => batch.id === certificate.harvestBatchId);
-  try {
-    await print();
-  } finally {
-    selectedCertificate.value = null;
-    selectedBatch.value = null;
-  }
-};
+const printFarmerCertificate = certificate => store.downloadCertificate(certificate).catch(() => {
+  store.error = 'harvest-certification.scope.load-error';
+});
+const print = () => printFarmerCertificate(selectedCertificate.value);
 
 watch(() => iamStore.currentUser, () => {
   dialog.value = 'closed';

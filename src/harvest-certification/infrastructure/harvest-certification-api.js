@@ -24,8 +24,8 @@ export class HarvestCertificationApi extends BaseApi {
     }
 
     /** @param {number} cooperativeId - Cooperative. @returns {Promise<import('axios').AxiosResponse>} Batches. */
-    getBatchesByCooperative(cooperativeId) {
-        return this.#batchesEndpoint.getAllBy({ cooperativeId });
+    getBatchesByCooperative(cooperativeId, memberId) {
+        return this.#batchesEndpoint.getAllBy({ cooperativeId, memberId });
     }
 
     /** @param {number} id - Batch. @returns {Promise<import('axios').AxiosResponse>} One batch. */
@@ -39,8 +39,29 @@ export class HarvestCertificationApi extends BaseApi {
     }
 
     /** @param {Object} resource - Batch payload. @returns {Promise<import('axios').AxiosResponse>} Updated batch. */
-    updateBatch(resource) {
-        return this.#batchesEndpoint.update(resource.id, resource);
+    recordEvaluationStep(batchId, step, payload) {
+        return this.http.post(`${harvestBatchesEndpointPath}/${batchId}/${step}`, payload);
+    }
+
+    getCertificateByBatch(batchId) {
+        return this.http.get(`${qualityCertificatesEndpointPath}/batch/${batchId}`)
+            .catch(error => {
+                if (error.response?.status === 404) return null;
+                throw error;
+            });
+    }
+
+    downloadCertificate(id) {
+        return this.http.get(`${qualityCertificatesEndpointPath}/${id}/document`, { responseType: 'blob' });
+    }
+
+    verifyCertificate(number, hash) {
+        return this.http.get('/public/traceability', { params: { number, hash } })
+            .then(response => response.data)
+            .catch(error => {
+                if (error.response?.status === 404) return null;
+                throw error;
+            });
     }
 
     /** @returns {Promise<import('axios').AxiosResponse>} All certificates. */

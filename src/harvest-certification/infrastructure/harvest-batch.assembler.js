@@ -12,7 +12,21 @@ export class HarvestBatchAssembler {
      * @returns {HarvestBatch} Harvest batch entity.
      */
     static toEntityFromResource(resource) {
-        return new HarvestBatch({...resource, id: Number(resource.id)});
+        return new HarvestBatch({
+            ...resource, id: Number(resource.id),
+            code: resource.batchCode ?? resource.code,
+            collectedAt: resource.harvestedOn ?? resource.collectedAt,
+            grossKg: resource.netWeightKg ?? resource.grossKg,
+            tareKg: resource.netWeightKg == null ? resource.tareKg : 0,
+            sampleKg: resource.sampleWeightKg ?? resource.sampleKg,
+            potatoGrading: resource.firstCaliberPercentage == null ? resource.potatoGrading : {
+                firstPercentage: resource.firstCaliberPercentage,
+                secondPercentage: resource.secondCaliberPercentage,
+                thirdPercentage: resource.thirdCaliberPercentage,
+                weevilDamagePercentage: resource.pestDamagePercentage
+            },
+            coffeeCupping: resource.coffeeCuppingScore == null ? resource.coffeeCupping : { totalScore: resource.coffeeCuppingScore }
+        });
     }
 
     /**
