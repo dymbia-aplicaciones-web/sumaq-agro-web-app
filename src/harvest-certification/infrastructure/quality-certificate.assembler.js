@@ -12,7 +12,8 @@ export class QualityCertificateAssembler {
      * @returns {QualityCertificate} Quality certificate entity.
      */
     static toEntityFromResource(resource) {
-        return new QualityCertificate({...resource, id: Number(resource.id)});
+        return new QualityCertificate({...resource, id: Number(resource.id),
+            sha256Hash: resource.certificateHash ?? resource.sha256Hash});
     }
 
     /**

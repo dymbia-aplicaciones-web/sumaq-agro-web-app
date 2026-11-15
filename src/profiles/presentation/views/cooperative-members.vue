@@ -1,4 +1,5 @@
 <script setup>
+import {certificateVerificationRoute} from "../../../harvest-certification/presentation/utils/certificate-verification.js";
 import {computed, reactive, ref, watch} from 'vue';
 import {useI18n} from 'vue-i18n';
 import {useRoute, useRouter} from 'vue-router';
@@ -284,7 +285,7 @@ async function save() {
             <ul v-else>
               <li v-for="certificate in harvest.certificates" :key="certificate.id">
                 {{ certificate.certificateNumber }} · {{ certificate.issuedAt }} · {{ t(key + '.certificate-' + certificate.status) }}
-                <router-link :to="{ name: 'public-traceability', params: { token: certificate.verificationToken } }">
+                <router-link :to="certificateVerificationRoute(certificate)">
                   {{ t(key + '.verify-certificate') }}
                 </router-link>
               </li>

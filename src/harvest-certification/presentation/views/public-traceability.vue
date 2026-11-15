@@ -15,13 +15,13 @@ const loading = ref(true);
 const error = ref(null);
 
 // Each token of the URL starts a new public query.
-watch(() => route.params.token, (token, _, onCleanup) => {
+watch([() => route.params.token, () => route.query.number, () => route.query.hash], ([token, number, hash], _, onCleanup) => {
   let current = true;
   onCleanup(() => { current = false; });
   loading.value = true;
   error.value = null;
   record.value = null;
-  store.verifyCertificate(String(token ?? ''))
+  store.verifyCertificate(String(token ?? ''), typeof number === 'string' ? number : '', typeof hash === 'string' ? hash : '')
       .then(result => {
         if (!current) return;
         if (!result) error.value = 'harvest-certification.trace.unknown-code';
@@ -44,6 +44,16 @@ watch(() => route.params.token, (token, _, onCleanup) => {
       <template v-else-if="error">
         <h1>{{ t('harvest-certification.trace.verification-failed') }}</h1>
         <p role="alert">{{ t(error) }}</p>
+      </template>
+      <template v-else-if="record.traceability">
+        <h1>{{ t('harvest-certification.trace.' + (record.traceability.authentic ? 'registered' : 'verification-failed')) }}</h1>
+        <p class="status">{{ record.traceability.certificateNumber }} · {{ record.traceability.status }}</p>
+        <dl v-if="record.traceability.authentic">
+          <dt>{{ t('harvest-certification.trace.batch') }}</dt><dd>{{ record.traceability.batchCode }}</dd>
+          <dt v-if="record.traceability.seedVariety">{{ t('harvest-certification.trace.product') }}</dt><dd v-if="record.traceability.seedVariety">{{ record.traceability.seedVariety }}</dd>
+          <dt v-if="record.traceability.plotName">{{ t('harvest-certification.trace.origin') }}</dt><dd v-if="record.traceability.plotName">{{ [record.traceability.plotName, record.traceability.region].filter(Boolean).join(', ') }}</dd>
+          <dt>{{ t('harvest-certification.trace.quality') }}</dt><dd>{{ t(`harvest-certification.quality-category.${record.traceability.qualityCategory}`) }}</dd>
+        </dl>
       </template>
       <template v-else-if="record.certificate.isActive() && record.batch">
         <h1>{{ t('harvest-certification.trace.registered') }}</h1>

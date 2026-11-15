@@ -1,4 +1,5 @@
 <script setup>
+import {certificateVerificationRoute} from "../utils/certificate-verification.js";
 import {computed, nextTick, onMounted, ref, watch} from "vue";
 import {useI18n} from "vue-i18n";
 import useHarvestCertificationStore from "../../application/harvest-certification.store.js";
@@ -80,7 +81,7 @@ const potatoFirstRate = computed(() => {
 });
 const specialtyCoffeeCount = computed(() => store.batches.filter(batch => batch.qualityCategory === 'SPECIALTY_COFFEE').length);
 
-const verificationUrl = certificate => `${window.location.origin}/verify/${encodeURIComponent(certificate.verificationToken)}`;
+const verificationUrl = certificate => `${window.location.origin}${router.resolve(certificateVerificationRoute(certificate)).href}`;
 const farmerQrUrl = certificate => `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(verificationUrl(certificate))}`;
 const toggleFarmerQr = id => visibleQr.value = visibleQr.value === id ? null : id;
 
