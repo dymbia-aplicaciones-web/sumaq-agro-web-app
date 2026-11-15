@@ -6,6 +6,7 @@ import cropHealthRoutes from "./crop-health/presentation/crop-health-routes.js";
 import profilesRoutes from "./profiles/presentation/profiles-routes.js";
 import harvestCertificationRoutes, {publicTraceabilityRoutes} from "./harvest-certification/presentation/harvest-certification-routes.js";
 import subscriptionsRoutes from "./subscriptions/presentation/subscriptions-routes.js";
+import {activeSubscriptionGuard} from "./subscriptions/infrastructure/active-subscription.guard.js";
 import {authenticationGuard} from "./iam/infrastructure/authentication.guard.js";
 
 // Define lazy-loaded components for routes
@@ -20,6 +21,7 @@ const forbidden = () => import('./shared/presentation/views/forbidden.vue');
  */
 const routes = [
     { path: '/iam',             children: iamRoutes },
+    { path: '/subscriptions',   children: subscriptionsRoutes },
     { path: '/verify',          children: publicTraceabilityRoutes },
     { path: '/demo-access',     redirect: { name: 'iam-demo-access' } },
     {
@@ -27,11 +29,10 @@ const routes = [
         component: layout,
         children: [
             { path: '',                       name: 'home',                   redirect: { name: 'iam-demo-access' } },
-            { path: 'field-management',       children: fieldManagementRoutes },
-            { path: 'crop-health',            children: cropHealthRoutes },
-            { path: 'profiles',               children: profilesRoutes },
-            { path: 'harvest-certification',  children: harvestCertificationRoutes },
-            { path: 'subscriptions',          children: subscriptionsRoutes },
+            { path: 'field-management',       children: fieldManagementRoutes, meta: { requiresActiveSubscription: true } },
+            { path: 'crop-health',            children: cropHealthRoutes, meta: { requiresActiveSubscription: true } },
+            { path: 'profiles',               children: profilesRoutes, meta: { requiresActiveSubscription: true } },
+            { path: 'harvest-certification',  children: harvestCertificationRoutes, meta: { requiresActiveSubscription: true } },
             { path: 'forbidden',              name: 'forbidden',              component: forbidden,    meta: { title: 'routes.forbidden' } },
             { path: ':pathMatch(.*)*',        name: 'not-found',              component: pageNotFound, meta: { title: 'routes.not-found' } }
         ]
@@ -53,7 +54,8 @@ const router = createRouter({
  */
 router.beforeEach((to, from) => {
     console.log(`Navigating from ${String(from.name)} to ${String(to.name)}`);
-    return authenticationGuard(to, from);
+    const authentication = authenticationGuard(to, from);
+    return authentication === true ? activeSubscriptionGuard(to) : authentication;
 });
 
 /**
