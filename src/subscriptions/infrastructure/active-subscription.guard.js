@@ -7,7 +7,7 @@ export async function activeSubscriptionGuard(to) {
     if (!to.meta.requiresActiveSubscription) return true;
     const iam = useIamStore();
     const user = iam.currentUser;
-    const signIn = { name: 'iam-demo-access', query: { redirect: to.fullPath } };
+    const signIn = { name: 'iam-sign-in', query: { returnUrl: to.fullPath } };
     if (!user) return signIn;
 
     try {
