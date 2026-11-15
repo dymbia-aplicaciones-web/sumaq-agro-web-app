@@ -1,3 +1,4 @@
+import {buildCostReportPdf} from '../infrastructure/cost-report-pdf.js';
 /**
  * Application service store for the Field Management bounded context
  * (Angular `FieldManagementStore`).
@@ -515,15 +516,29 @@ const useFieldManagementStore = defineStore('field-management', () => {
      * Builds the cost report of a campaign and downloads it.
      * @param {import('../domain/model/commands/export-campaign-cost-report.command.js').ExportCampaignCostReportCommand} command - Campaign of the report.
      */
-    function exportCostReport(command) {
+    async function exportCostReport(command) {
         const campaign = findCampaign(command.campaignId);
         if (!campaign) {
             error.value = 'field-management.errors.export-report';
             return;
         }
-        fieldManagementApi.downloadCostReport(command.campaignId)
-            .then(content => fileDownloader.save({ fileName: `cost-report-${campaign.season}.pdf`, content }))
-            .catch(cause => fail(cause, 'field-management.errors.export-report'));
+        const owner = currentUserId.value;
+        const ledger = ledgersByCampaign.value.get(campaign.id);
+        const plot = findPlot(campaign.plotId);
+        error.value = null;
+        try {
+            let content;
+            try {
+                content = await fieldManagementApi.downloadCostReport(campaign.id);
+            } catch (cause) {
+                if (cause?.response?.status !== 404 || !ledger) throw cause;
+                content = buildCostReportPdf(ledger, campaign.season, plot?.name ?? '', plot?.areaHectares ?? 0);
+            }
+            if (owner === currentUserId.value)
+                fileDownloader.save({ fileName: `cost-report-${campaign.season}.pdf`, content });
+        } catch (cause) {
+            if (owner === currentUserId.value) fail(cause, 'field-management.errors.export-report');
+        }
     }
 
     /**
