@@ -24,6 +24,8 @@ const cropHealthRoutes = [
     {   path: 'prescriptions',      name: 'crop-health-prescriptions',  component: prescriptions,         meta: { title: 'routes.ch-prescriptions' } },
     {   path: 'report-pest',        name: 'crop-health-report-pest',    component: pestReportForm,        meta: { title: 'routes.ch-report-pest', roles: ['FARMER'] } },
     {   path: 'reports/:id',        name: 'crop-health-report',         component: farmerCase,            meta: { title: 'routes.ch-report' } },
+    { path: 'pest-reports/:reportId/inspections', name: 'crop-health-case-inspections', component: fieldInspections, meta: { title: 'routes.ch-inspections' } },
+    { path: 'pest-reports/:reportId/prescriptions/new', name: 'crop-health-case-prescription', component: prescriptionForm, meta: { title: 'routes.ch-prescribe', roles: ['AGRONOMIST'] } },
     {   path: 'prescribe',          name: 'crop-health-prescribe',      component: prescriptionForm,      meta: { title: 'routes.ch-prescribe', roles: ['AGRONOMIST'] } }
 ];
 

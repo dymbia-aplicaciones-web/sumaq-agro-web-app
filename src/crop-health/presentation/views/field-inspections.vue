@@ -14,9 +14,12 @@ const route = useRoute();
 const router = useRouter();
 const { t, locale } = useI18n();
 
-const caseId = Number(route.query['reportId']) || 0;
+const caseId = computed(() => {
+  const id = Number(route.params.reportId ?? route.query.reportId);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+});
 /** Keeps the inspection workspace attached to the selected authorized case. */
-const caseInspections = computed(() => store.inspections.filter(item => !caseId || item.reportId === caseId));
+const caseInspections = computed(() => store.inspections.filter(item => !caseId.value || item.reportId === caseId.value));
 
 const form = ref({ reportId: null, scheduledAt: null, notes: '' });
 const submitted = ref(false);
@@ -30,10 +33,10 @@ const load = () => store.loadClinicalData(() => {
   form.value = { reportId: null, scheduledAt: null, notes: '' };
   submitted.value = false;
   completionNotes.value = {};
-  if (store.schedulableReports.some(report => report.id === caseId)) form.value.reportId = caseId;
+  if (store.schedulableReports.some(report => report.id === caseId.value)) form.value.reportId = caseId.value;
 });
 
-watch(() => store.scopeReady, ready => {
+watch([() => store.scopeReady, caseId], ([ready]) => {
   saved.value = false;
   if (ready) load();
 }, { immediate: true });

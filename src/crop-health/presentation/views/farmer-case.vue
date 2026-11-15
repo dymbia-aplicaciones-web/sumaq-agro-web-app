@@ -162,9 +162,9 @@ const longDate = (value) => formatDate(value, locale.value, { dateStyle: 'long' 
               <a v-if="report.photo" :href="report.photo" target="_blank" rel="noopener noreferrer">{{ t('crop-health.view-photo') }}</a>
               <nav class="flex flex-wrap gap-2">
                 <pv-button v-if="store.canSchedule && report.status === 'PENDING'" outlined :label="t('crop-health.inspections-title')"
-                           @click="router.push({ path: '/crop-health/inspections', query: { reportId: report.id } })"/>
+                           @click="router.push({ name: 'crop-health-case-inspections', params: { reportId: report.id } })"/>
                 <pv-button v-if="store.canPrescribe && report.status === 'INSPECTED'" outlined :label="t('crop-health.btn-prescribe')"
-                           @click="router.push({ path: '/crop-health/prescribe', query: { reportId: report.id } })"/>
+                           @click="router.push({ name: 'crop-health-case-prescription', params: { reportId: report.id } })"/>
               </nav>
               <p>{{ t('crop-health.form-severity') }}: {{ t(`crop-health.severities.${report.severity}`) }}</p>
             </div>
