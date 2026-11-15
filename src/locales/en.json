@@ -619,6 +619,14 @@
       "save-evaluation": "Record evaluation",
       "awaiting-evidence": "Waiting for farmer application and evolution records for the same prescription.",
       "evaluation-saved": "Evaluation saved. The case status reflects the recorded conclusion."
+    },
+    "inbox-description": "Review pest reports and follow up on inspections and prescriptions.",
+    "alerts-description": "Check agroclimatic alerts for your selected plot.",
+    "alert-levels": {
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "HIGH": "High",
+      "CRITICAL": "Critical"
     }
   },
   "profiles": {

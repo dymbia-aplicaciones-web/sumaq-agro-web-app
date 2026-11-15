@@ -619,6 +619,14 @@
       "save-evaluation": "Registrar evaluación",
       "awaiting-evidence": "Esperando confirmación de aplicación y evolución del agricultor para una misma receta.",
       "evaluation-saved": "Evaluación guardada. El estado del caso refleja la conclusión registrada."
+    },
+    "inbox-description": "Revisa los reportes de plagas y da seguimiento a las inspecciones y prescripciones.",
+    "alerts-description": "Consulta las alertas agroclimáticas de la parcela seleccionada.",
+    "alert-levels": {
+      "LOW": "Baja",
+      "MEDIUM": "Media",
+      "HIGH": "Alta",
+      "CRITICAL": "Crítica"
     }
   },
   "profiles": {
