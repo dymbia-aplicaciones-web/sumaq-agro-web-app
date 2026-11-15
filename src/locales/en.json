@@ -1316,14 +1316,17 @@
       "selected": "Plan selected",
       "annual-savings": "Save {amount} per year",
       "plot-quota": "Up to {quota} plots",
-      "choose": "Choose plan"
+      "choose": "Continue to payment",
+      "cancel-note": "Cancel anytime. You keep access until the end of the paid period."
     },
     "catalog": {
-      "title": "Plans",
-      "subtitle": "Choose the plan that best fits your work.",
+      "title": "Activate your plan",
+      "subtitle": "You need an active plan to start using SumaqAgro. Choose how you'd like to pay.",
       "billing-cycle": "Billing cycle",
       "empty": "No plans are available right now.",
-      "access-check-failed": "Could not verify subscription access. Try again."
+      "access-check-failed": "Could not verify subscription access. Try again.",
+      "eyebrow": "Last step",
+      "annual-tag": "Save"
     },
     "billing": {
       "title": "Subscription and payments",
@@ -1383,6 +1386,11 @@
       "payment": "The payment could not be processed. Your plan was not changed.",
       "cancel": "The subscription could not be cancelled.",
       "receipt": "The receipt could not be found."
+    },
+    "segment": {
+      "SEED": "For independent farmers",
+      "COOPERATIVE_PRO": "For cooperatives",
+      "TECHNICAL_ADVISOR": "For technical advisors"
     }
   }
 }
