@@ -1,7 +1,7 @@
 <script setup>
 import {computed} from "vue";
 import {useI18n} from "vue-i18n";
-import {useRouter} from "vue-router";
+import {useRoute, useRouter} from "vue-router";
 import useSubscriptionsStore from "../../application/subscriptions.store.js";
 import {SelectSubscriptionPlanCommand} from "../../domain/model/commands/select-subscription-plan.command.js";
 import {BillingCycle} from "../../domain/model/entities/billing-cycle.js";
@@ -12,6 +12,7 @@ import PlanCard from "../components/plan-card.vue";
 /** Catalog of available subscription plans and their billing cycles (Angular `PlansCatalogView`). */
 const { t } = useI18n();
 const router = useRouter();
+const route = useRoute();
 const store = useSubscriptionsStore();
 
 /** Breadcrumb path for the catalog page. */
@@ -36,8 +37,8 @@ if (store.currentUserId !== null) store.loadMySubscription(store.currentUserId);
 const onSelectPlan = (plan) => {
   const userId = store.currentUserId;
   if (userId === null) return;
-  store.selectPlan(new SelectSubscriptionPlanCommand({ userId, planCode: plan.code, billingCycle: store.billingCycle }));
-  if (store.selectedPlan?.code === plan.code) router.push('/subscriptions/checkout');
+  const accepted = store.selectPlan(new SelectSubscriptionPlanCommand({ userId, planCode: plan.code, billingCycle: store.billingCycle }));
+  if (accepted) router.push({ name: 'subscriptions-checkout' });
 };
 </script>
 
@@ -47,6 +48,8 @@ const onSelectPlan = (plan) => {
 
     <page-header :breadcrumbs="breadcrumbs" :title="t('subscriptions.catalog.title')" :subtitle="t('subscriptions.catalog.subtitle')"/>
 
+    <message-card v-if="route.query.accessCheck === 'failed'" icon="pi pi-exclamation-triangle"
+                  :message="t('subscriptions.catalog.access-check-failed')" alert/>
     <message-card v-if="store.error" icon="pi pi-times-circle" :message="t(store.error)" alert/>
 
     <section class="cycle-picker" :aria-label="t('subscriptions.catalog.billing-cycle')">
@@ -58,15 +61,15 @@ const onSelectPlan = (plan) => {
 
     <section class="plan-grid" :aria-label="t('subscriptions.catalog.title')">
       <plan-card
-          v-for="plan in store.plans"
+          v-for="plan in store.eligiblePlans"
           :key="plan.id"
           :plan="plan"
           :cycle="store.billingCycle"
           :current="store.subscription?.hasAccess() === true && store.subscription?.planId === plan.id"
           :selected="store.selectedPlan?.code === plan.code"
-          :disabled="store.loading"
+          :disabled="store.loading || !store.plotQuotaReady"
           @choose="onSelectPlan"/>
-      <message-card v-if="store.plans.length === 0 && !store.loading && !store.error" icon="pi pi-box"
+      <message-card v-if="store.eligiblePlans.length === 0 && !store.loading && !store.error" icon="pi pi-box"
                     :message="t('subscriptions.catalog.empty')"/>
     </section>
   </div>
