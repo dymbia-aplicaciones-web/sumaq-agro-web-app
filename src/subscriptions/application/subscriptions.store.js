@@ -110,15 +110,16 @@ const useSubscriptionsStore = defineStore('subscriptions', () => {
      * Loads the subscription of a user and its payments.
      * A user who never paid has no subscription: `subscription` stays `null`.
      * @param {number} userId - Owner of the subscription.
+     * @param {boolean} [includePayments=true] - Load payment history for billing.
      */
-    function loadMySubscription(userId) {
+    function loadMySubscription(userId, includePayments = true) {
         if (userId !== currentUserId.value) return;
         const revision = ++loadRevision;
         startLoading();
         return Promise.all([subscriptionsApi.getPlans(), subscriptionsApi.getSubscriptionByUserId(userId)])
             .then(([loadedPlans, found]) => {
                 const ready = found ? withPlan(found, loadedPlans) : null;
-                return (ready ? subscriptionsApi.getPayments(ready.id) : Promise.resolve([]))
+                return (ready && includePayments ? subscriptionsApi.getPayments(ready.id) : Promise.resolve([]))
                     .then(loadedPayments => ({ loadedPlans, ready, loadedPayments }));
             })
             .then(({ loadedPlans, ready, loadedPayments }) => {
