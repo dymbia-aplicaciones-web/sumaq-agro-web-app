@@ -23,13 +23,20 @@ export class PlotAdvisorAssignmentsApi extends BaseApi {
     }
 
     /**
-     * Loads explicitly granted responsibilities; cooperative membership does not grant access.
-     * @param {number} userId - Advisor.
-     * @returns {Promise<PlotAdvisorAssignment[]>} Assignments.
+     * Loads active assignments for the authenticated agronomist.
      */
-    getByAdvisor(userId) {
-        return this.http.get(plotAdvisorAssignmentsEndpointPath, { params: { advisorUserId: userId } })
+    getMine() {
+        return this.http.get('/agronomist-assignments/me')
             .then(response => resourcesFromResponse(response, 'assignments'));
+    }
+
+    getActiveByPlot(plotId) {
+        return this.http.get(`/agronomist-assignments/plot/${plotId}`)
+            .then(response => response.data)
+            .catch(error => {
+                if (error.response?.status === 404) return null;
+                throw error;
+            });
     }
 
     /**

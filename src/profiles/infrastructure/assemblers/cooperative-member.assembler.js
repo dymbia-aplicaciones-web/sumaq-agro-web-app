@@ -12,7 +12,12 @@ export class CooperativeMemberAssembler {
      * @returns {CooperativeMember} Member read model.
      */
     static toEntityFromResource(resource) {
-        return new CooperativeMember({ ...resource, id: Number(resource.id) });
+        return new CooperativeMember({
+            ...resource,
+            id: Number(resource.id),
+            fullName: resource.fullName ?? [resource.firstName, resource.lastName].filter(Boolean).join(' '),
+            active: resource.active ?? true
+        });
     }
 
     /**

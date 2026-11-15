@@ -14,12 +14,12 @@ export class FieldInspectionAssembler {
     static toEntityFromResource(resource) {
         return new FieldInspection({
             id: Number(resource.id),
-            reportId: resource.reportId,
+            reportId: resource.pestReportId,
             scheduledAt: resource.scheduledAt,
-            notes: resource.notes,
+            notes: resource.findings,
             status: resource.status,
             completedAt: resource.completedAt,
-            inspectorUserId: resource.inspectorUserId
+            inspectorUserId: resource.agronomistId
         });
     }
 

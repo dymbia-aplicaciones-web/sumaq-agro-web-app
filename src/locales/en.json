@@ -941,6 +941,7 @@
         "denied": "You may only assign available advisors to your own plots.",
         "conflict": "Duplicate assignments were found for this plot. Request a data review."
       },
+      "assignment-read-only": "You can view your current assignment here.",
       "by-director": "The board of your cooperative assigns the advisor of each plot."
     }
   },

@@ -1,6 +1,4 @@
 <script setup>
-import {certificateVerificationRoute} from "../utils/certificate-verification.js";
-import {useRouter} from "vue-router";
 import {computed} from "vue";
 import {useI18n} from "vue-i18n";
 import {formatDate, formatNumber} from "../../../shared/presentation/format.js";
@@ -15,9 +13,12 @@ const props = defineProps({
 });
 const { t, locale } = useI18n();
 
-const router = useRouter();
-const token = computed(() => props.certificate?.verificationToken ?? props.draft?.verificationToken);
-const verificationUrl = computed(() => props.certificate ? window.location.origin + router.resolve(certificateVerificationRoute(props.certificate)).href : token.value ? `${window.location.origin}/verify/${encodeURIComponent(token.value)}` : '');
+const verificationUrl = computed(() => {
+  const certificate = props.certificate;
+  return certificate?.sha256Hash
+    ? `${window.location.origin}/verify/${encodeURIComponent(certificate.certificateNumber)}?hash=${encodeURIComponent(certificate.sha256Hash)}`
+    : '';
+});
 const qrImageUrl = computed(() => `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verificationUrl.value)}`);
 const dateTime = value => formatDate(value, locale.value, { dateStyle: 'short', timeStyle: 'short' });
 </script>
@@ -50,7 +51,6 @@ const dateTime = value => formatDate(value, locale.value, { dateStyle: 'short', 
           <strong>{{ t('harvest-certification.certificate.date') }}:</strong> {{ dateTime(certificate.issuedAt) }}
         </div>
         <div v-else-if="draft">
-          <strong>{{ t('harvest-certification.certificate.preliminary-hash') }}:</strong> {{ draft.sha256Hash.slice(0, 18) }}…<br/>
           <strong>{{ t('harvest-certification.certificate.expected-issuer') }}:</strong> {{ draft.issuerName }}<br/>
           <strong>{{ t('harvest-certification.certificate.preview-date') }}:</strong> {{ dateTime(draft.issuedAt) }}
         </div>

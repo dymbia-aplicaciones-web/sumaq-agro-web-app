@@ -4,6 +4,7 @@ import {useI18n} from 'vue-i18n';
 import {useRoute, useRouter} from 'vue-router';
 import {developmentAccounts, mockAuthentication} from '../../infrastructure/mock/development-authentication.js';
 import AuthLayout from "../components/auth-layout.vue";
+import {canOpenWorkspace} from '../../infrastructure/workspace-access.js';
 import useIamStore from '../../application/iam.store.js';
 import {UserRole} from '../../domain/model/user.entity.js';
 
@@ -82,7 +83,8 @@ async function submit() {
             const target = route.query.returnUrl;
             const resolved = typeof target === 'string' && /^\/(?![/\\])/.test(target) ? router.resolve(target) : null;
             const allowed = resolved && resolved.name !== 'not-found' && !resolved.meta.public &&
-                resolved.name !== 'public-traceability' && (!resolved.meta.roles || user.hasRole(...resolved.meta.roles));
+                resolved.name !== 'public-traceability' && canOpenWorkspace(user.experience, resolved.path) &&
+                (!resolved.meta.roles || user.hasRole(...resolved.meta.roles));
             await router.replace(allowed ? resolved.fullPath : user.initialRoute);
         } else if (mode === 'signUp') {
             await iam.signUp({...fields, email, firstName: fields.firstName.trim(), lastName: fields.lastName.trim()});

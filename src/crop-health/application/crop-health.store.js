@@ -146,10 +146,7 @@ const useCropHealthStore = defineStore('crop-health', () => {
         const source = () => user.experience === 'FARMER'
             ? fields.getPlotsByOwner(user.id).then(scopePlots => ({ plots: scopePlots, advisors: [], advisor: null }))
             : user.experience === 'AGRONOMIST'
-                ? profiles.getAdvisorByUser(user.id).then(advisor => {
-                    if (!advisor) throw new Error('crop-health.errors.advisor-not-assigned');
-                    return advisorScope(advisor, user.id);
-                })
+                ? advisorScope(user)
                 : profiles.getCooperativeByDirector(user.id).then(cooperative => {
                     if (!cooperative) throw new Error('crop-health.errors.no-cooperative');
                     return cooperativeScope(cooperative.id, null);
@@ -165,18 +162,12 @@ const useCropHealthStore = defineStore('crop-health', () => {
     }
 
     /** Resolves explicit active plot grants without requiring a cooperative membership. */
-    function advisorScope(advisor, userId) {
-        return assignmentApi.getByAdvisor(userId).then(records => {
-            const active = records.filter(item => item.advisorUserId === userId && item.status === 'ACTIVE');
-            if (new Set(active.map(item => item.plotId)).size !== active.length)
-                throw new Error('crop-health.errors.assignment-conflict');
-            return (active.length ? fields.getPlotsByIds(active.map(item => item.plotId)) : Promise.resolve([]))
-                .then(found => ({
-                    plots: found.filter(plot => active.some(item => item.plotId === plot.id && item.producerUserId === plot.ownerUserId)),
-                    advisors: [advisor],
-                    advisor
-                }));
-        });
+    async function advisorScope(user) {
+        const advisor = { userId: user.id, name: user.displayName };
+        const assignments = await assignmentApi.getMine();
+        const plotIds = [...new Set(assignments.map(assignment => assignment.plotId))];
+        const assignedPlots = plotIds.length ? await fields.getPlotsByIds(plotIds) : [];
+        return { plots: assignedPlots, advisors: [advisor], advisor };
     }
 
     /** Rechecks the current grant before each professional write, including partial-write retries. */
@@ -184,10 +175,10 @@ const useCropHealthStore = defineStore('crop-health', () => {
         const user = activeUser.value;
         const current = report(reportId);
         if (user?.experience !== 'AGRONOMIST') return Promise.resolve().then(operation);
-        return assignmentApi.getByPlot(current.plotId).then(assignment => {
+        return assignmentApi.getActiveByPlot(current.plotId).then(assignment => {
             const plot = plots.value.find(item => item.id === current.plotId);
-            if (user !== activeUser.value || !scopeReady.value || !plot || assignment?.status !== 'ACTIVE'
-                || assignment.advisorUserId !== user.id || assignment.producerUserId !== plot.ownerUserId
+            if (user !== activeUser.value || !scopeReady.value || !plot || !assignment?.active
+                || assignment.agronomistUserId !== user.id
                 || current.reporterId !== plot.ownerUserId) {
                 plotsState.value = plotsState.value.filter(item => item.id !== current.plotId);
                 denied();
@@ -208,9 +199,9 @@ const useCropHealthStore = defineStore('crop-health', () => {
     function cooperativeScope(cooperativeId, advisor) {
         return Promise.all([profiles.getCooperativeMembers(cooperativeId), profiles.getTechnicalAdvisors(cooperativeId)])
             .then(([members, scopeAdvisors]) => {
-                const ids = [...new Set(members.filter(member => member.active).flatMap(member => member.plots.map(plot => plot.id)))];
-                return (ids.length ? fields.getPlotsByIds(ids) : Promise.resolve([]))
-                    .then(scopePlots => ({ plots: scopePlots, advisors: scopeAdvisors, advisor }));
+                const userIds = [...new Set(members.filter(member => member.active).map(member => member.userId).filter(Boolean))];
+                return Promise.all(userIds.map(userId => fields.getPlotsByOwner(userId)))
+                    .then(groups => ({ plots: groups.flat(), advisors: scopeAdvisors, advisor }));
             });
     }
 
@@ -260,6 +251,13 @@ const useCropHealthStore = defineStore('crop-health', () => {
             data => alertsState.value = data.filter(alert => alert.region === region), 'crop-health.errors.load-alerts');
     }
 
+    function optionalCaseData(request) {
+        return request.catch(error => {
+            if (error.response?.status === 404) return [];
+            throw error;
+        });
+    }
+
     /**
      * Loads pest reports, inspections, prescriptions, farmer evidence and assessments of the plots in scope.
      * @param {function(): void} [onLoaded] - Called once the data is shown.
@@ -278,15 +276,15 @@ const useCropHealthStore = defineStore('crop-health', () => {
                 const ids = new Set(allowed.map(item => item.id));
                 if (!ids.size) return { reports: allowed, inspections: [], prescriptions: [], followUps: [], assessments: [] };
                 return Promise.all([
-                    Promise.all([...ids].map(id => assessmentApi.getByReport(id))),
-                    api.getInspections(),
-                    api.getPrescriptions(),
-                    Promise.all([...ids].map(id => followUpApi.getByReport(id)))
-                ]).then(([assessmentGroups, loadedInspections, loadedPrescriptions, followUpGroups]) => ({
+                    Promise.all([...ids].map(id => optionalCaseData(assessmentApi.getByReport(id)))),
+                    Promise.all(scope.map(plot => api.getInspectionsByPlot(plot.id))),
+                    Promise.all(scope.map(plot => api.getPrescriptionsByPlot(plot.id))),
+                    Promise.all([...ids].map(id => optionalCaseData(followUpApi.getByReport(id))))
+                ]).then(([assessmentGroups, inspectionGroups, prescriptionGroups, followUpGroups]) => ({
                     reports: allowed,
                     assessments: assessmentGroups.flat().filter(item => ids.has(item.data.reportId)),
-                    inspections: loadedInspections.filter(item => ids.has(item.reportId)),
-                    prescriptions: loadedPrescriptions.filter(item => ids.has(item.reportId)),
+                    inspections: inspectionGroups.flat().filter(item => ids.has(item.reportId)),
+                    prescriptions: prescriptionGroups.flat().filter(item => ids.has(item.reportId)),
                     followUps: followUpGroups.flat().filter(item => ids.has(item.data.reportId)
                         && allowed.some(candidate => candidate.id === item.data.reportId && candidate.reporterId === item.data.producerUserId))
                 }));
@@ -331,7 +329,14 @@ const useCropHealthStore = defineStore('crop-health', () => {
             if (Date.parse(command.scheduledAt) <= Date.now()) throw new Error('crop-health.errors.future-visit');
             if (inspections.value.some(item => item.reportId === command.reportId))
                 throw new Error('crop-health.errors.visit-already-scheduled');
-            return withResponsibility(command.reportId, () => api.scheduleInspection(command));
+            const user = activeUser.value;
+            return withResponsibility(command.reportId, async () => {
+                const agronomistId = user.experience === 'AGRONOMIST'
+                    ? user.id
+                    : (await assignmentApi.getActiveByPlot(report(command.reportId).plotId))?.agronomistUserId;
+                if (!agronomistId) throw new Error('crop-health.errors.advisor-not-assigned');
+                return api.scheduleInspection(command, agronomistId);
+            });
         }, saved => inspectionsState.value = [...inspectionsState.value, saved], onSaved, onFailure, 'crop-health.errors.save-inspection');
     }
 
@@ -343,40 +348,20 @@ const useCropHealthStore = defineStore('crop-health', () => {
      * @param {function(): void} onFailure - Called when it fails.
      */
     function completeInspection(id, notes, onSaved, onFailure) {
-        let inspectionSaved = false;
         mutate(() => {
             const user = activeUser.value;
             const current = inspections.value.find(item => item.id === id);
-            if (!canPrescribe.value || !user || !current) denied();
-            const updatedReport = copyReport(report(current.reportId));
-            if (updatedReport.status !== 'PENDING') throw new Error('crop-health.errors.invalid-transition');
-            const inspection = new FieldInspection({
-                id: current.id,
-                reportId: current.reportId,
-                scheduledAt: current.scheduledAt,
-                notes: current.notes,
-                status: current.status,
-                completedAt: current.completedAt,
-                inspectorUserId: current.inspectorUserId
-            });
-            let saved;
-            if (inspection.status === 'COMPLETED') {
-                if (inspection.inspectorUserId !== user.id || updatedReport.status !== 'PENDING') denied();
-                saved = () => Promise.resolve(inspection);
-            } else {
-                inspection.complete(notes, user.id);
-                saved = () => api.updateInspection(inspection);
-            }
-            return withResponsibility(current.reportId, saved)
-                .then(result => {
-                    inspectionSaved = true;
-                    inspectionsState.value = inspectionsState.value.map(item => item.id === result.id ? result : item);
-                    if (updatedReport.status !== 'PENDING') return updatedReport;
-                    updatedReport.markInspected();
-                    return withResponsibility(updatedReport.id, () => api.updateReport(updatedReport));
-                });
-        }, replaceReport, onSaved, onFailure,
-            () => inspectionSaved ? 'crop-health.errors.inspection-status-partial' : 'crop-health.errors.complete-inspection');
+            if (!canPrescribe.value || !user || !current || current.inspectorUserId !== user.id) denied();
+            if (report(current.reportId).status !== 'PENDING') throw new Error('crop-health.errors.invalid-transition');
+            const inspection = new FieldInspection(current);
+            inspection.complete(notes, user.id);
+            return withResponsibility(current.reportId, () => api.completeInspection(id, inspection.notes));
+        }, saved => {
+            inspectionsState.value = inspectionsState.value.map(item => item.id === saved.id ? saved : item);
+            const inspected = copyReport(report(saved.reportId));
+            inspected.markInspected();
+            replaceReport(inspected);
+        }, onSaved, onFailure, 'crop-health.errors.complete-inspection');
     }
 
     /**
@@ -413,7 +398,7 @@ const useCropHealthStore = defineStore('crop-health', () => {
             const current = report(command.reportId);
             return withResponsibility(command.reportId, () => Promise.all([
                 api.getPestReportsByPlot(current.plotId),
-                api.getPrescriptionsByReportId(command.reportId),
+                api.getPrescriptionsByPlot(current.plotId),
                 followUpApi.getByReport(command.reportId),
                 assessmentApi.getByReport(command.reportId)
             ])).then(([loadedReports, loadedPrescriptions, loadedFollowUps, loadedAssessments]) => {

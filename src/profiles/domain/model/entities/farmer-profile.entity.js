@@ -20,8 +20,8 @@ export class FarmerProfile {
         this.userId = userId;
         this.firstName = firstName?.trim() ?? '';
         this.lastName = lastName?.trim() ?? '';
-        this.phoneNumber = FarmerProfile.validatePhoneNumber(phoneNumber);
-        this.email = FarmerProfile.validateEmail(email);
+        this.phoneNumber = phoneNumber?.trim() || null;
+        this.email = email?.trim().toLowerCase() || null;
     }
 
     /** @returns {string} First and last name. */

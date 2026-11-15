@@ -60,15 +60,14 @@ const save = () => {
         </template>
         <template v-if="!store.loading">
           <template v-if="advisor">
-            <p><strong>{{ advisor.name }}</strong> · CIP {{ advisor.cipCode }}</p>
-            <p>{{ advisor.phone }}</p>
+            <p><strong>{{ advisor.name }}</strong> <span v-if="advisor.cipCode">· CIP {{ advisor.cipCode }}</span></p>
+            <p v-if="advisor.phone">{{ advisor.phone }}</p>
           </template>
           <p v-else-if="assignment?.status === 'ACTIVE'">{{ t('profiles.advisory.unavailable') }}</p>
           <p v-else>{{ t('profiles.advisory.unassigned') }}</p>
-          <p class="sa-muted">{{ t('profiles.advisory.demo-notice') }}</p>
 
           <p v-if="store.advisorAssignedByDirector" class="sa-muted">{{ t('profiles.advisory.by-director') }}</p>
-          <template v-else-if="store.advisors.length">
+          <template v-else-if="store.canAssign(plotId) && store.advisors.length">
             <div class="sa-field advisor-select">
               <label :for="`advisor-select-${plotId}`">{{ t('profiles.advisory.select') }}</label>
               <pv-select :model-value="selected" :input-id="`advisor-select-${plotId}`" :options="advisorOptions"
@@ -88,7 +87,7 @@ const save = () => {
                          @click="confirming = true; saved = false"/>
             </div>
           </template>
-          <p v-else-if="!store.error">{{ t('profiles.advisory.no-advisors') }}</p>
+          <p v-else-if="!store.error">{{ t('profiles.advisory.assignment-read-only') }}</p>
         </template>
         <p v-if="saved" role="status">{{ t('profiles.advisory.saved') }}</p>
       </div>

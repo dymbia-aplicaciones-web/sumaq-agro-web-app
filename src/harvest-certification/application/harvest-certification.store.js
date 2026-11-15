@@ -11,14 +11,16 @@ import {HarvestCertificationApi} from "../infrastructure/harvest-certification-a
 import {HarvestBatchAssembler} from "../infrastructure/harvest-batch.assembler.js";
 import {QualityCertificateAssembler} from "../infrastructure/quality-certificate.assembler.js";
 import {HarvestBatch} from "../domain/model/harvest-batch.entity.js";
-import {BatchStatus, CertificateStatus, HarvestCropType} from "../domain/model/harvest-certification.enums.js";
+import {BatchStatus, HarvestCropType} from "../domain/model/harvest-certification.enums.js";
 import {classifyQuality, validateEvaluation} from "../domain/model/quality-grading.js";
+import {FieldManagementApi} from "../../field-management/infrastructure/field-management-api.js";
 import {ProfilesApi} from "../../profiles/infrastructure/profiles-api.js";
 import useIamStore from "../../iam/application/iam.store.js";
 
 const harvestCertificationApi = new HarvestCertificationApi();
 
 const profiles = new ProfilesApi();
+const fields = new FieldManagementApi();
 
 /**
  * Reactive store that exposes Harvest Certification commands and queries.
@@ -68,19 +70,27 @@ const useHarvestCertificationStore = defineStore('harvest-certification', () => 
                 : await profiles.getMembershipsByUser(user.id);
             const active = scopedMembers.filter(member => member.active &&
                 (director ? member.cooperativeId === id : member.userId === user.id));
-            const ids = director ? (id === null ? [] : [id]) : [...new Set(active.map(member => member.cooperativeId))];
-            const [collections, certificateResponse] = await Promise.all([
-                Promise.all(ids.map(value => harvestCertificationApi.getBatchesByCooperative(value))),
-                ids.length ? harvestCertificationApi.getCertificates() : null
+            const collections = director
+                ? (id === null ? [] : [await harvestCertificationApi.getBatchesByCooperative(id)])
+                : await Promise.all(active.map(member => harvestCertificationApi.getBatchesByCooperative(member.cooperativeId, member.id)));
+            const loadedBatches = collections.flatMap(response => HarvestBatchAssembler.toEntitiesFromResponse(response));
+            const [loadedMembers, loadedCertificates] = await Promise.all([
+                Promise.all(active.map(loadMemberPlots)),
+                Promise.all(loadedBatches.filter(batch => batch.status === BatchStatus.CERTIFIED)
+                    .map(batch => harvestCertificationApi.getCertificateByBatch(batch.id)))
             ]);
             if (revision !== request || iam.currentUser !== user) return;
-            batches.value = collections.flatMap(response => HarvestBatchAssembler.toEntitiesFromResponse(response))
-                .filter(batch => director ? batch.cooperativeId === id :
-                    active.some(member => member.id === batch.memberId && member.cooperativeId === batch.cooperativeId));
-            const batchIds = new Set(batches.value.map(batch => batch.id));
-            certificates.value = certificateResponse ? QualityCertificateAssembler.toEntitiesFromResponse(certificateResponse)
-                .filter(certificate => batchIds.has(certificate.harvestBatchId)) : [];
-            members.value = active;
+            batches.value = loadedBatches.map(batch => {
+                const member = loadedMembers.find(item => item.id === batch.memberId);
+                const plot = member?.plots.find(item => item.id === batch.plotId);
+                return Object.assign(batch, {
+                    memberName: member?.name ?? '', plotName: plot?.name ?? '',
+                    plotRegion: plot?.region ?? '', variety: plot?.variety ?? ''
+                });
+            });
+            certificates.value = loadedCertificates.filter(Boolean)
+                .map(response => QualityCertificateAssembler.toEntityFromResource(response.data));
+            members.value = loadedMembers;
             cooperativeId.value = id;
             ready.value = true;
             if (director && id === null) notice.value = 'harvest-certification.scope.no-cooperative';
@@ -89,6 +99,21 @@ const useHarvestCertificationStore = defineStore('harvest-certification', () => 
         } finally {
             if (revision === request) loading.value = false;
         }
+    }
+
+    async function loadMemberPlots(member) {
+        if (!member.userId) return member;
+        const plots = await fields.getPlotsByOwner(member.userId);
+        member.plots = (await Promise.all(plots.map(async plot => {
+            const campaigns = await fields.getCampaignsByPlot(plot.id);
+            const campaign = campaigns.filter(item => Object.values(HarvestCropType).includes(item.cropType))
+                .sort((a, b) => b.sowingDate.localeCompare(a.sowingDate))[0];
+            return campaign && {
+                id: plot.id, name: plot.name, region: plot.region, campaignId: campaign.id,
+                cropType: campaign.cropType, variety: campaign.customSeedVariety || campaign.seedVariety
+            };
+        }))).filter(Boolean);
+        return member;
     }
 
     watch(() => iam.currentUser, load, { flush: 'sync' });
@@ -111,7 +136,7 @@ const useHarvestCertificationStore = defineStore('harvest-certification', () => 
         const isPotato = plot.cropType === HarvestCropType.ANDEAN_POTATO;
         const batch = new HarvestBatch({
             id: 0,
-            code: `BATCH-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`,
+            code: `BATCH-${crypto.randomUUID().replaceAll('-', '').slice(0, 22)}`,
             cooperativeId: cooperativeId.value,
             memberId: member.id,
             memberName: member.name,
@@ -134,16 +159,7 @@ const useHarvestCertificationStore = defineStore('harvest-certification', () => 
             qualityCategory: classifyQuality(evaluation),
             status: BatchStatus.GRADED
         });
-        const { id, ...newBatch } = HarvestBatchAssembler.toResourceFromEntity(batch);
-        const issuedAt = new Date().toISOString();
-        const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify({ batch: newBatch, issuedAt })));
-        return {
-            batch,
-            verificationToken: crypto.randomUUID(),
-            sha256Hash: Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join(''),
-            issuedAt,
-            issuerName: iam.currentUser?.displayName
-        };
+        return { batch, issuedAt: new Date().toISOString(), issuerName: iam.currentUser?.displayName };
     }
 
     /**
@@ -166,34 +182,52 @@ const useHarvestCertificationStore = defineStore('harvest-certification', () => 
         loading.value = true;
         error.value = null;
         try {
-            if (!draft.savedBatch) {
-                const response = await harvestCertificationApi.createBatch(HarvestBatchAssembler.toResourceFromEntity(draft.batch));
-                draft.savedBatch = HarvestBatchAssembler.toEntityFromResource(response.data);
-                if (!current()) return null;
-                batches.value = [draft.savedBatch, ...batches.value];
-            }
-            const saved = draft.savedBatch;
-            if (!saved.canIssueCertificate) throw new Error('harvest-certification.errors.batch-not-graded');
-            if (!draft.savedCertificate) {
-                if (certificates.value.some(item => item.harvestBatchId === saved.id))
-                    throw new Error('harvest-certification.errors.already-certified');
-                const response = await harvestCertificationApi.createCertificate({
-                    harvestBatchId: saved.id, certificateNumber: `CERT-${saved.code}`,
-                    sha256Hash: draft.sha256Hash, verificationToken: draft.verificationToken,
-                    issuedByUserId: issuer.id, issuedByName: issuer.displayName,
-                    issuedAt: draft.issuedAt, status: CertificateStatus.ACTIVE, revokedReason: null
-                });
-                draft.savedCertificate = QualityCertificateAssembler.toEntityFromResource(response.data);
-                if (!current()) return null;
-                certificates.value = [draft.savedCertificate, ...certificates.value];
-            }
-            const response = await harvestCertificationApi.updateBatch({
-                ...HarvestBatchAssembler.toResourceFromEntity(saved), status: BatchStatus.CERTIFIED
-            });
+            const input = draft.batch;
+            const listed = await harvestCertificationApi.getBatchesByCooperative(input.cooperativeId);
             if (!current()) return null;
-            const batch = HarvestBatchAssembler.toEntityFromResource(response.data);
-            batches.value = batches.value.map(item => item.id === batch.id ? batch : item);
-            return { certificate: draft.savedCertificate, batch };
+            let saved = listed.data.find(batch => batch.batchCode === input.code);
+            if (!saved) {
+                const response = await harvestCertificationApi.createBatch({
+                    batchCode: input.code, cooperativeId: input.cooperativeId, memberId: input.memberId,
+                    plotId: input.plotId, cropType: input.cropType, harvestedOn: input.collectedAt
+                });
+                saved = response.data;
+            }
+            draft.savedBatch = saved;
+            const step = async (name, payload) => {
+                if (!current()) throw new Error('Session changed');
+                saved = (await harvestCertificationApi.recordEvaluationStep(saved.id, name, payload)).data;
+                draft.savedBatch = saved;
+            };
+            if (saved.netWeightKg == null)
+                await step('weight', { grossWeightKg: input.grossKg, tareKg: input.tareKg });
+            if (saved.sampleIdentifier == null)
+                await step('sample', { sampleIdentifier: `S-${input.code}`, sampleWeightKg: input.sampleKg });
+            if (saved.status === 'PENDING') {
+                if (input.potatoGrading) {
+                    const { weevilDamagePercentage, ...grades } = input.potatoGrading;
+                    await step('potato-calibers', { ...grades, pestDamagePercentage: weevilDamagePercentage });
+                } else {
+                    await step('coffee-cupping', { ...input.coffeeCupping, fermentDefect: false });
+                }
+            }
+            if (!current()) return null;
+            const response = saved.status === BatchStatus.CERTIFIED
+                ? await harvestCertificationApi.getCertificateByBatch(saved.id)
+                : await harvestCertificationApi.createCertificate({
+                    harvestBatchId: saved.id, certificateNumber: `CERT-${input.code}`, issuedByUserId: issuer.id
+                });
+            if (!response || !current()) return null;
+            const certificate = QualityCertificateAssembler.toEntityFromResource({
+                ...response.data, issuedByName: issuer.displayName
+            });
+            const batch = Object.assign(HarvestBatchAssembler.toEntityFromResource(saved), {
+                status: BatchStatus.CERTIFIED, memberName: input.memberName, plotName: input.plotName,
+                plotRegion: input.plotRegion, variety: input.variety, coordinates: input.coordinates
+            });
+            batches.value = [batch, ...batches.value.filter(item => item.id !== batch.id)];
+            certificates.value = [certificate, ...certificates.value.filter(item => item.id !== certificate.id)];
+            return { certificate, batch };
         } catch {
             if (current()) error.value = draft.savedBatch
                 ? 'harvest-certification.errors.issue-incomplete' : 'harvest-certification.errors.save-batch';
@@ -203,30 +237,19 @@ const useHarvestCertificationStore = defineStore('harvest-certification', () => 
         }
     }
 
-    /**
-     * Public verification of a certificate from its QR token: the token finds
-     * the certificate and its `harvestBatchId` finds the batch.
-     * @param {string} token - QR token.
-     * @returns {Promise<{certificate: Object, batch: HarvestBatch|null}|null>} `null` when the token is unknown.
-     */
-    function verifyCertificate(token, number, hash) {
-        if (number && hash) {
-            return harvestCertificationApi.getPublicTraceability(number, hash)
-                .then(traceability => ({traceability}))
-                .catch(error => {
-                    if (error.response?.status === 404) return null;
-                    throw error;
-                });
-        }
-        if (!token) return Promise.resolve(null);
-        return harvestCertificationApi.getCertificatesByToken(token.trim())
-            .then(response => {
-                const [certificate] = QualityCertificateAssembler.toEntitiesFromResponse(response);
-                if (!certificate) return null;
-                if (!certificate.isActive()) return { certificate, batch: null };
-                return harvestCertificationApi.getBatchById(certificate.harvestBatchId)
-                    .then(batchResponse => ({ certificate, batch: HarvestBatchAssembler.toEntityFromResource(batchResponse.data) }));
-            });
+    function verifyCertificate(number, hash) {
+        if (!number || !/^[a-f0-9]{64}$/i.test(hash)) return Promise.resolve(null);
+        return harvestCertificationApi.verifyCertificate(number, hash);
+    }
+
+    async function downloadCertificate(certificate) {
+        const response = await harvestCertificationApi.downloadCertificate(certificate.id);
+        const url = URL.createObjectURL(response.data);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${certificate.certificateNumber}.pdf`;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
     return {
@@ -241,7 +264,8 @@ const useHarvestCertificationStore = defineStore('harvest-certification', () => 
         load,
         prepareDraft,
         issue,
-        verifyCertificate
+        verifyCertificate,
+        downloadCertificate
     };
 });
 

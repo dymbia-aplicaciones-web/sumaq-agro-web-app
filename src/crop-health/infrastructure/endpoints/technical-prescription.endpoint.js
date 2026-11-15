@@ -20,7 +20,7 @@ export class TechnicalPrescriptionsApiEndpoint extends BaseEndpoint {
      * @param {number} reportId - The unique identifier of the pest report.
      * @returns {Promise<import('../../domain/model/entities/technical-prescription.entity.js').TechnicalPrescription[]>} Prescriptions.
      */
-    getByReportId(reportId) {
-        return this.getAllBy({ reportId }).then(response => TechnicalPrescriptionAssembler.toEntitiesFromResponse(response));
+    getByPlot(plotId) {
+        return this.getAllBy({ plotId }).then(response => TechnicalPrescriptionAssembler.toEntitiesFromResponse(response));
     }
 }
