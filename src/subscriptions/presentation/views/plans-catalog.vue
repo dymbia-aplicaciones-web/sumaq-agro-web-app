@@ -25,7 +25,7 @@ const cycle = computed({
 });
 
 // Load both the catalog and the current subscription to highlight its plan.
-if (store.currentUserId !== null) store.loadMySubscription(store.currentUserId);
+if (store.currentUserId !== null) store.loadMySubscription(store.currentUserId, false);
 
 /**
  * Creates the selection command for the signed-in user.
@@ -34,6 +34,10 @@ if (store.currentUserId !== null) store.loadMySubscription(store.currentUserId);
 const onSelectPlan = (plan) => {
   const userId = store.currentUserId;
   if (userId === null) return;
+  if (store.selectedPlan?.code === plan.code) {
+    void router.push({ name: 'subscriptions-checkout' });
+    return;
+  }
   const accepted = store.selectPlan(new SelectSubscriptionPlanCommand({ userId, planCode: plan.code, billingCycle: store.billingCycle }));
   if (accepted) router.push({ name: 'subscriptions-checkout' });
 };

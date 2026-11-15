@@ -43,9 +43,9 @@ const { t } = useI18n();
         <i class="pi pi-check" aria-hidden="true"/> {{ t(`subscriptions.features.${feature}`) }}
       </li>
     </ul>
-    <pv-button class="plan-action" type="button" :disabled="disabled || current || selected"
-               :icon="current || selected ? undefined : 'pi pi-arrow-right'" icon-pos="right"
-               :label="t(current ? 'subscriptions.plans.current' : selected ? 'subscriptions.plans.selected' : 'subscriptions.plans.choose')"
+    <pv-button class="plan-action" type="button" :disabled="disabled || current"
+               :icon="current ? undefined : 'pi pi-arrow-right'" icon-pos="right"
+               :label="t(current ? 'subscriptions.plans.current' : 'subscriptions.plans.choose')"
                @click="emit('choose', plan)"/>
     <p class="note"><i class="pi pi-calendar" aria-hidden="true"/> {{ t('subscriptions.plans.cancel-note') }}</p>
   </article>
