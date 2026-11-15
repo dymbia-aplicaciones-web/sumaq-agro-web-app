@@ -1,7 +1,7 @@
 import {BaseEndpoint} from "../../../shared/infrastructure/base-endpoint.js";
 import {ClimateForecastAssembler} from "../assemblers/climate-forecast.assembler.js";
 
-const climateForecastsEndpointPath = import.meta.env.VITE_CLIMATE_FORECASTS_ENDPOINT_PATH;
+const climateForecastsEndpointPath = import.meta.env.VITE_CLIMATE_FORECASTS_ENDPOINT_PATH || '/climate-forecasts';
 
 /**
  * HTTP endpoint for managing weather and climate forecasts (`/climate-forecasts`).

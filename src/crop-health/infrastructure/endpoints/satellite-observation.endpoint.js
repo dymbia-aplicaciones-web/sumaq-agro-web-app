@@ -1,7 +1,7 @@
 import {BaseEndpoint} from "../../../shared/infrastructure/base-endpoint.js";
 import {SatelliteObservationAssembler} from "../assemblers/satellite-observation.assembler.js";
 
-const satelliteObservationsEndpointPath = import.meta.env.VITE_SATELLITE_OBSERVATIONS_ENDPOINT_PATH;
+const satelliteObservationsEndpointPath = import.meta.env.VITE_SATELLITE_OBSERVATIONS_ENDPOINT_PATH || '/satellite-observations';
 
 /**
  * HTTP endpoint for managing remote sensing and satellite data (`/satellite-observations`).

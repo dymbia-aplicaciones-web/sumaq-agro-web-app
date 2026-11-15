@@ -1,7 +1,7 @@
 import {BaseEndpoint} from "../../../shared/infrastructure/base-endpoint.js";
 import {TechnicalPrescriptionAssembler} from "../assemblers/technical-prescription.assembler.js";
 
-const technicalPrescriptionsEndpointPath = import.meta.env.VITE_TECHNICAL_PRESCRIPTIONS_ENDPOINT_PATH;
+const technicalPrescriptionsEndpointPath = import.meta.env.VITE_TECHNICAL_PRESCRIPTIONS_ENDPOINT_PATH || '/technical-prescriptions';
 
 /**
  * HTTP endpoint for managing agronomist prescriptions (`/technical-prescriptions`).

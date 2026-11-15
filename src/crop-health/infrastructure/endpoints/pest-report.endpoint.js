@@ -1,7 +1,7 @@
 import {BaseEndpoint} from "../../../shared/infrastructure/base-endpoint.js";
 import {PestReportAssembler} from "../assemblers/pest-report.assembler.js";
 
-const pestReportsEndpointPath = import.meta.env.VITE_PEST_REPORTS_ENDPOINT_PATH;
+const pestReportsEndpointPath = import.meta.env.VITE_PEST_REPORTS_ENDPOINT_PATH || '/pest-reports';
 
 /**
  * HTTP endpoint for managing pest reports data (`/pest-reports`).
