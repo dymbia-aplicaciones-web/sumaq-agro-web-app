@@ -26,6 +26,9 @@ export class CooperativeMemberAssembler {
             fullName: entity.fullName,
             active: entity.active,
             userId: entity.userId,
+            dni: entity.dni,
+            phone: entity.phone,
+            community: entity.community,
             plots: entity.plots
         };
     }
