@@ -294,33 +294,53 @@ async function save() {
       </pv-card>
     </template>
     <template v-else>
-      <div v-if="members.length" class="flex flex-wrap gap-3">
-        <pv-card v-for="(count, label) in stats" :key="label">
-          <template #title>{{ count }}</template>
-          <template #content>{{ t(key + '.' + label) }}</template>
-        </pv-card>
+      <div class="member-stats">
+        <article v-for="(count, label) in stats" :key="label" class="member-stat">
+          <span class="stat-icon">
+            <i :class="label === 'kpi-total' ? 'pi pi-users' : label === 'kpi-active' ? 'pi pi-shield' : 'pi pi-map'" aria-hidden="true"/>
+          </span>
+          <div><span>{{ t(key + '.' + label) }}</span><strong>{{ count }}</strong></div>
+        </article>
       </div>
-      <div class="flex flex-wrap gap-2">
-        <pv-input-text v-model="query" type="search" :placeholder="t(key + '.search')" :aria-label="t(key + '.search')"/>
-        <pv-select v-model="filter" :options="filters" option-label="label" option-value="value" :aria-label="t(key + '.filter-status')"/>
+      <div class="member-directory">
+        <div class="directory-filters">
+          <pv-icon-field class="directory-search">
+            <pv-input-icon class="pi pi-search"/>
+            <pv-input-text v-model="query" type="search" fluid :placeholder="t(key + '.search')" :aria-label="t(key + '.search')"/>
+          </pv-icon-field>
+          <pv-select-button v-model="filter" class="directory-status" :options="filters" option-label="label"
+                            option-value="value" :allow-empty="false" :aria-label="t(key + '.filter-status')"/>
+          <span class="directory-count" aria-live="polite">{{ visibleMembers.length }} / {{ members.length }}</span>
+        </div>
+        <pv-data-table :value="visibleMembers" data-key="id" class="directory-table" table-style="min-width: 44rem">
+          <template #empty>{{ t(key + (members.length ? '.no-results' : '.empty')) }}</template>
+          <pv-column field="fullName" :header="t(key + '.name')">
+            <template #body="{data}">
+              <div class="member-cell">
+                <span class="member-initials" aria-hidden="true">{{ data.fullName.trim().split(/\s+/).slice(0, 2).map(word => word[0]).join('').toUpperCase() }}</span>
+                <div><strong>{{ data.fullName }}</strong><small v-if="data.community">{{ data.community }}</small></div>
+              </div>
+            </template>
+          </pv-column>
+          <pv-column field="dni" header="DNI"><template #body="{data}">{{ data.dni || '—' }}</template></pv-column>
+          <pv-column field="phone" :header="t(key + '.phone')"><template #body="{data}">{{ data.phone || '—' }}</template></pv-column>
+          <pv-column :header="t(key + '.status')">
+            <template #body="{data}">
+              <span class="member-status" :class="{active: data.active}">{{ t(key + (data.active ? '.active' : '.inactive')) }}</span>
+            </template>
+          </pv-column>
+          <pv-column :header="t(key + '.plots')">
+            <template #body="{data}"><span class="plot-count"><i class="pi pi-map" aria-hidden="true"/> {{ data.plots.length }}</span></template>
+          </pv-column>
+          <pv-column>
+            <template #body="{data}">
+              <router-link class="member-detail" :to="memberRoute(data.id)" :aria-label="t(key + '.view') + ' ' + data.fullName">
+                <i class="pi pi-chevron-right" aria-hidden="true"/>
+              </router-link>
+            </template>
+          </pv-column>
+        </pv-data-table>
       </div>
-      <pv-data-table :value="visibleMembers" data-key="id" paginator :rows="10">
-        <template #empty>{{ t(key + (members.length ? '.no-results' : '.empty')) }}</template>
-        <pv-column field="fullName" :header="t(key + '.name')"/>
-        <pv-column field="dni" header="DNI"/>
-        <pv-column field="phone" :header="t(key + '.phone')"/>
-        <pv-column :header="t(key + '.status')">
-          <template #body="{data}">
-            <pv-tag :severity="data.active ? 'success' : 'secondary'" :value="t(key + (data.active ? '.active' : '.inactive'))"/>
-          </template>
-        </pv-column>
-        <pv-column :header="t(key + '.plots')">
-          <template #body="{data}">{{ data.plots.length }}</template>
-        </pv-column>
-        <pv-column>
-          <template #body="{data}"><router-link :to="memberRoute(data.id)">{{ t(key + '.view') }}</router-link></template>
-        </pv-column>
-      </pv-data-table>
     </template>
 
 
@@ -339,4 +359,32 @@ async function save() {
 .member-actions { display: flex; justify-content: flex-end; gap: 12px; padding-top: 16px; border-top: 1px solid var(--sa-outline-variant); }
 .member-add.p-button, .member-actions :deep(.p-button) { border-radius: 999px; }
 .member-add.p-button, .member-actions :deep(.p-button[type="submit"]) { background: #00463f; border-color: #00463f; }
+.member-heading a { color: var(--sa-primary); text-decoration: none; font-weight: 500; }
+.member-heading a:hover { text-decoration: underline; }
+.member-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 16px; }
+.member-stat, .member-directory { border: 1px solid #d7dfd3; border-radius: 16px; background: #fff; box-shadow: 0 2px 6px #1836260d; }
+.member-stat { min-height: 86px; display: flex; align-items: center; gap: 16px; padding: 16px 20px; }
+.stat-icon, .member-initials { display: grid; place-items: center; flex: none; background: #e1eee1; color: #00463f; }
+.stat-icon { width: 44px; height: 44px; border-radius: 12px; }
+.member-stat strong { display: block; color: #00463f; font-size: 1.55rem; line-height: 1.25; }
+.member-stat div > span, .directory-count { color: #506359; font-size: .85rem; font-weight: 600; }
+.member-directory { padding: clamp(12px, 2vw, 20px); }
+.directory-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; }
+.directory-search { width: min(100%, 420px); }
+.directory-search :deep(.p-inputtext) { background: #f7f8f0; }
+.directory-status { border: 1px solid #899388; border-radius: 999px; overflow: hidden; }
+.directory-status :deep(.p-togglebutton) { border: 0; border-radius: 0; }
+.directory-status :deep(.p-togglebutton-checked) { background: #00463f; color: white; }
+.directory-count { margin-inline-start: auto; }
+.directory-table { border: 1px solid #d7dfd3; border-radius: 12px; overflow: hidden; }
+.directory-table :deep(th) { background: #f2f5ef; color: #506359; }
+.directory-table :deep(th), .directory-table :deep(td) { padding: 14px 18px; border-color: #d7dfd3; }
+.member-cell { display: flex; align-items: center; gap: 12px; }
+.member-initials { width: 38px; height: 38px; border-radius: 50%; font-size: .75rem; font-weight: 700; }
+.member-cell small { display: block; color: #506359; }
+.member-status { padding: 2px 10px; border: 1px solid #899388; border-radius: 8px; white-space: nowrap; }
+.member-status.active { border-color: #6c976f; }
+.plot-count { display: inline-flex; gap: 6px; align-items: center; padding: 2px 10px; background: #f2f5ef; border-radius: 999px; color: #00463f; font-weight: 600; }
+.member-detail { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: #506359; }
+.member-detail:hover { background: #e1eee1; }
 </style>
