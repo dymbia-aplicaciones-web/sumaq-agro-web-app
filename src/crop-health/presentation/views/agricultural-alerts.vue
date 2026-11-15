@@ -20,16 +20,25 @@ watch(() => store.selectedPlot, plot => { if (plot) store.loadAlerts(plot.region
 <template>
   <div class="page">
     <pv-progress-bar v-if="store.alertsLoading" mode="indeterminate" style="height: 4px" :aria-label="t('common.loading')"/>
-    <page-header :eyebrow="t('crop-health.eyebrow')" :title="t('crop-health.alerts-title')" :subtitle="store.selectedPlot?.region ?? ''">
+    <page-header :breadcrumbs="[{label: 'option.diagnosis-inbox', link: '/crop-health/inbox'}, {label: 'crop-health.alerts-title'}]"
+                 :title="t('crop-health.alerts-title')" :subtitle="t('crop-health.alerts-description')"/>
+    <section class="alert-toolbar">
       <plot-selector :plots="store.plots" :selected-plot-id="store.selectedPlot?.id ?? null" :disabled="store.scopeLoading"
                      @plot-selected="store.selectPlot"/>
-    </page-header>
+      <span v-if="store.selectedPlot" class="region-chip">
+        <i class="pi pi-map-marker" aria-hidden="true"/> {{ t('crop-health.region') }}:
+        <strong>{{ store.selectedPlot.region }}</strong>
+      </span>
+    </section>
 
     <message-card v-if="store.alertsError" icon="pi pi-times-circle" :message="t(store.alertsError)" alert/>
     <div v-else-if="!store.alertsLoading && store.selectedPlot" class="alerts-list">
       <pv-card v-for="alert in store.alerts" :key="alert.id" class="alert-card" :class="alert.severity.toLowerCase()">
         <template #title>
-          <span class="flex align-items-center gap-3 text-lg"><i class="pi pi-exclamation-triangle text-2xl" aria-hidden="true"/>{{ alert.title }}</span>
+          <div class="alert-heading">
+            <span>{{ alert.title }}</span>
+            <pv-tag class="alert-severity" rounded icon="pi pi-exclamation-triangle" :value="t('crop-health.alert-levels.' + alert.severity)"/>
+          </div>
         </template>
         <template #subtitle>{{ formatDate(alert.issuedAt, locale) }} · {{ alert.source }}</template>
         <template #content>
@@ -79,4 +88,14 @@ watch(() => store.selectedPlot, plot => { if (plot) store.loadAlerts(plot.region
   color: var(--sa-on-surface-variant);
   font-weight: 500;
 }
+.alert-toolbar, .alert-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.alert-toolbar { padding: 20px 24px; background: white; border: 1px solid var(--sa-outline-variant); border-radius: 16px; }
+.region-chip { padding: 8px 14px; border-radius: 999px; background: var(--sa-secondary-container); }
+.alert-card { background: white; }
+.alert-card.high, .alert-card.critical { border-left-color: #b83d00; }
+.alert-card.medium { border-left-color: #ca7600; }
+.alert-severity { background: #eef3e9; color: #235018; }
+.high .alert-severity, .critical .alert-severity { background: #fff1e6; color: #a23400; }
+.medium .alert-severity { background: #fff6df; color: #855000; }
+.alert-card :deep(.p-card-content > p) { border-top: 1px solid var(--sa-outline-variant); padding-top: 14px; }
 </style>
