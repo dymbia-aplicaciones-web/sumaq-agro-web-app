@@ -10,16 +10,15 @@ const router = useRouter();
 </script>
 
 <template>
-  <div class="min-h-screen">
-    <header class="flex flex-wrap align-items-center justify-content-between gap-3 px-4 py-3 border-bottom-1 surface-border">
+  <div class="subscriptions-shell min-h-screen">
+    <header class="flex flex-wrap align-items-center justify-content-between gap-3 px-4 py-3">
       <div class="flex align-items-center gap-2">
         <img src="/images/logo-sumaqagro.png" alt="" width="40" height="40"/>
-        <strong>SumaqAgro</strong>
+        <strong>Sumaq<span>Agro</span></strong>
       </div>
       <div class="flex align-items-center gap-3">
-        <span>{{ iam.currentUser?.displayName }}</span>
-        <language-switcher/>
-        <pv-button text icon="pi pi-sign-out" :aria-label="t('layout.sign-out')" @click="iam.signOut(router)"/>
+        <language-switcher class="shell-language"/>
+        <pv-button text icon="pi pi-sign-out" :label="t('layout.sign-out')" :aria-label="t('layout.sign-out')" @click="iam.signOut(router)"/>
       </div>
     </header>
     <main class="px-4 py-3 mx-auto" style="max-width: 72rem">
@@ -27,3 +26,12 @@ const router = useRouter();
     </main>
   </div>
 </template>
+
+<style scoped>
+.subscriptions-shell { background: #f1f2ea; }
+strong { font-size: 1.35rem; }
+strong span { color: #076600; }
+.shell-language { width: auto; border-radius: 999px; overflow: hidden; background: transparent; }
+.shell-language :deep(.p-togglebutton) { background: transparent; }
+.shell-language :deep(.p-togglebutton-checked) { background: #d5e7cd; }
+</style>
