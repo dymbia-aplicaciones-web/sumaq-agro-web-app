@@ -19,6 +19,16 @@ export class CooperativeMembersApiEndpoint extends BaseEndpoint {
      * @param {number} cooperativeId - Cooperative.
      * @returns {Promise<import('../../domain/model/entities/cooperative-member.entity.js').CooperativeMember[]>} Members.
      */
+    async add(cooperativeId, details) {
+        const { data } = await this.create({ ...details, cooperativeId, active: true, plots: [] });
+        return CooperativeMemberAssembler.toEntityFromResource(data);
+    }
+
+    async updateDetails(id, details) {
+        const { data } = await this.http.patch(`${this.endpointPath}/${encodeURIComponent(id)}`, details);
+        return CooperativeMemberAssembler.toEntityFromResource(data);
+    }
+
     getByCooperative(cooperativeId) {
         return this.getAllBy({ cooperativeId }).then(response => CooperativeMemberAssembler.toEntitiesFromResponse(response));
     }
