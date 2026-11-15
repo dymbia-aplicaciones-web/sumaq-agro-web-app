@@ -32,6 +32,31 @@ export class ProfilesApi extends BaseApi {
         this.#technicalAdvisorsEndpoint = new TechnicalAdvisorsApiEndpoint(this);
     }
 
+    async registerCooperative(directorUserId, { legalName, ruc, region }) {
+        const { data } = await this.#cooperativesEndpoint.create({
+            directorUserId, legalName, ruc, region,
+            institutionalEmail: '', legalRepresentative: '',
+            headquartersAddress: '', switchboardPhone: ''
+        });
+        return CooperativeAssembler.toEntityFromResource(data);
+    }
+
+    addCooperativeMember(cooperativeId, details) {
+        return this.#cooperativeMembersEndpoint.add(cooperativeId, details);
+    }
+
+    updateCooperativeMember(id, details) {
+        return this.#cooperativeMembersEndpoint.updateDetails(id, details);
+    }
+
+    linkMemberAccount(id, userId) {
+        return this.#cooperativeMembersEndpoint.updateDetails(id, { userId });
+    }
+
+    linkMemberPlot(member, plot) {
+        return this.#cooperativeMembersEndpoint.updateDetails(member.id, { plots: [...member.plots, plot] });
+    }
+
     /** @param {number} userId - Farmer. @returns {Promise<import('../domain/model/entities/farmer-profile.entity.js').FarmerProfile>} Profile. */
     getFarmerProfile(userId) {
         return this.#farmerProfilesEndpoint.getByUser(userId);
