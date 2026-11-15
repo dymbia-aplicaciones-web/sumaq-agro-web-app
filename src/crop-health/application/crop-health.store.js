@@ -224,6 +224,11 @@ const useCropHealthStore = defineStore('crop-health', () => {
     /** @param {number} plotId - Plot to show. */
     function selectPlot(plotId) {
         if (!plots.value.some(plot => plot.id === plotId)) return;
+        fieldStore.selectPlotId(plotId);
+        if (canReport.value) fieldStore.selectPlot(plotId);
+    }
+
+    function clearPlotData() {
         requests.delete('observations');
         requests.delete('alerts');
         setBusy('observations', false);
@@ -232,8 +237,6 @@ const useCropHealthStore = defineStore('crop-health', () => {
         alertsState.value = [];
         setError('observations', null);
         setError('alerts', null);
-        fieldStore.selectPlotId(plotId);
-        if (canReport.value) fieldStore.selectPlot(plotId);
     }
 
     /** @param {number} plotId - Plot whose satellite observations are loaded (newest first). */
@@ -684,6 +687,7 @@ const useCropHealthStore = defineStore('crop-health', () => {
     }
 
     // Resolve the scope again every time the user changes.
+    watch(() => fieldStore.selectedPlotId, clearPlotData, { flush: 'sync' });
     watch(activeUser, user => loadScope(user), { immediate: true });
 
     return {
