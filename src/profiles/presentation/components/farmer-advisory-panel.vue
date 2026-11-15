@@ -63,11 +63,12 @@ const save = () => {
             <p><strong>{{ advisor.name }}</strong> · CIP {{ advisor.cipCode }}</p>
             <p>{{ advisor.phone }}</p>
           </template>
-          <p v-else-if="assignment">{{ t('profiles.advisory.unavailable') }}</p>
+          <p v-else-if="assignment?.status === 'ACTIVE'">{{ t('profiles.advisory.unavailable') }}</p>
           <p v-else>{{ t('profiles.advisory.unassigned') }}</p>
           <p class="sa-muted">{{ t('profiles.advisory.demo-notice') }}</p>
 
-          <template v-if="store.advisors.length">
+          <p v-if="store.advisorAssignedByDirector" class="sa-muted">{{ t('profiles.advisory.by-director') }}</p>
+          <template v-else-if="store.advisors.length">
             <div class="sa-field advisor-select">
               <label :for="`advisor-select-${plotId}`">{{ t('profiles.advisory.select') }}</label>
               <pv-select :model-value="selected" :input-id="`advisor-select-${plotId}`" :options="advisorOptions"
