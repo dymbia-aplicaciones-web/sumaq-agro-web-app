@@ -50,7 +50,8 @@ const onSubmit = () => {
     reportId: value.reportId,
     agronomistId,
     recommendedProducts: value.agrochemical.trim(),
-    dosageInstructions: `${value.dosage.trim()}\n${value.instructions.trim()}`,
+    dosage: value.dosage.trim(),
+    instructions: value.instructions.trim(),
     applicationDate: toApiDate(value.applicationDate)
   }), () => {
     form.value = emptyForm(value.reportId);

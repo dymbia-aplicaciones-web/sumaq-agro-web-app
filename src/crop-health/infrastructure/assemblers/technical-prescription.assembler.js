@@ -14,10 +14,10 @@ export class TechnicalPrescriptionAssembler {
     static toEntityFromResource(resource) {
         return new TechnicalPrescription({
             id: Number(resource.id),
-            reportId: resource.reportId,
+            reportId: resource.pestReportId,
             agronomistId: resource.agronomistId,
-            recommendedProducts: resource.recommendedProducts,
-            dosageInstructions: resource.dosageInstructions,
+            recommendedProducts: resource.product,
+            dosageInstructions: [resource.dosage, resource.instructions].filter(Boolean).join('\n'),
             applicationDate: resource.applicationDate
         });
     }

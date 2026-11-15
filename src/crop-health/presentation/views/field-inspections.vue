@@ -21,7 +21,7 @@ const caseId = computed(() => {
 /** Keeps the inspection workspace attached to the selected authorized case. */
 const caseInspections = computed(() => store.inspections.filter(item => !caseId.value || item.reportId === caseId.value));
 
-const form = ref({ reportId: null, scheduledAt: null, notes: '' });
+const form = ref({ reportId: null, scheduledAt: null });
 const submitted = ref(false);
 const formDisabled = ref(false);
 const saved = ref(false);
@@ -30,7 +30,7 @@ const completionNotes = ref({});
 
 const load = () => store.loadClinicalData(() => {
   formDisabled.value = false;
-  form.value = { reportId: null, scheduledAt: null, notes: '' };
+  form.value = { reportId: null, scheduledAt: null };
   submitted.value = false;
   completionNotes.value = {};
   if (store.schedulableReports.some(report => report.id === caseId.value)) form.value.reportId = caseId.value;
@@ -51,10 +51,9 @@ const onSubmit = () => {
   formDisabled.value = true;
   store.scheduleInspection(new ScheduleFieldInspectionCommand({
     reportId: value.reportId,
-    scheduledAt: value.scheduledAt.toISOString(),
-    notes: value.notes.trim()
+    scheduledAt: value.scheduledAt.toISOString()
   }), () => {
-    form.value = { reportId: value.reportId, scheduledAt: null, notes: '' };
+    form.value = { reportId: value.reportId, scheduledAt: null };
     submitted.value = false;
     formDisabled.value = false;
     savedMessage.value = 'crop-health.inspection-saved';
@@ -101,10 +100,6 @@ const dateTime = (value) => formatDate(value, locale.value, { dateStyle: 'medium
             <pv-date-picker v-model="form.scheduledAt" input-id="scheduled-at" show-time hour-format="24" date-format="dd/mm/yy"
                             :min-date="new Date()" show-icon :disabled="formDisabled" :invalid="submitted && !form.scheduledAt" fluid/>
             <small v-if="submitted && !form.scheduledAt" class="sa-error">{{ t('crop-health.required-field') }}</small>
-          </div>
-          <div class="sa-field">
-            <label for="notes">{{ t('crop-health.inspection-notes') }}</label>
-            <pv-textarea id="notes" v-model="form.notes" rows="3" :disabled="formDisabled" fluid/>
           </div>
           <div>
             <pv-button type="submit" class="sa-pill" :label="t('crop-health.schedule-inspection')"

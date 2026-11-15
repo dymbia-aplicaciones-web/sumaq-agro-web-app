@@ -12,11 +12,13 @@ export class IssueTechnicalPrescriptionCommand {
      * @param {string} props.dosageInstructions - Dosage and handling instructions.
      * @param {string} props.applicationDate - Suggested application date (`YYYY-MM-DD`).
      */
-    constructor({ reportId, agronomistId, recommendedProducts, dosageInstructions, applicationDate }) {
+    constructor({ reportId, agronomistId, recommendedProducts, dosage, instructions, applicationDate }) {
         this.reportId = reportId;
         this.agronomistId = agronomistId;
         this.recommendedProducts = recommendedProducts;
-        this.dosageInstructions = dosageInstructions;
+        this.dosage = dosage;
+        this.instructions = instructions;
+        this.dosageInstructions = `${dosage}\n${instructions}`;
         this.applicationDate = applicationDate;
     }
 }

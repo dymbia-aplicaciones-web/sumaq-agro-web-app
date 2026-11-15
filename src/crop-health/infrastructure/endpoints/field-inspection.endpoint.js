@@ -20,7 +20,7 @@ export class FieldInspectionsApiEndpoint extends BaseEndpoint {
      * @param {number} reportId - The unique identifier of the pest report.
      * @returns {Promise<import('../../domain/model/entities/field-inspection.entity.js').FieldInspection[]>} Inspections.
      */
-    getByReportId(reportId) {
-        return this.getAllBy({ reportId }).then(response => FieldInspectionAssembler.toEntitiesFromResponse(response));
+    getByPlot(plotId) {
+        return this.getAllBy({ plotId }).then(response => FieldInspectionAssembler.toEntitiesFromResponse(response));
     }
 }

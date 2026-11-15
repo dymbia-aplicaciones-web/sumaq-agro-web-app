@@ -1,7 +1,5 @@
 import {BaseApi} from "../../shared/infrastructure/base-api.js";
 import {PestReport} from "../domain/model/entities/pest-report.entity.js";
-import {FieldInspection} from "../domain/model/entities/field-inspection.entity.js";
-import {TechnicalPrescription} from "../domain/model/entities/technical-prescription.entity.js";
 import {PestReportAssembler} from "./assemblers/pest-report.assembler.js";
 import {FieldInspectionAssembler} from "./assemblers/field-inspection.assembler.js";
 import {TechnicalPrescriptionAssembler} from "./assemblers/technical-prescription.assembler.js";
@@ -64,29 +62,12 @@ export class CropHealthApi extends BaseApi {
         return this.#forecastsEndpoint.getByRegion(region);
     }
 
-    /** @param {number} reportId - Report. @returns {Promise<FieldInspection[]>} Inspections of the report. */
-    getInspectionsByReportId(reportId) {
-        return this.#inspectionsEndpoint.getByReportId(reportId);
+    getInspectionsByPlot(plotId) {
+        return this.#inspectionsEndpoint.getByPlot(plotId);
     }
 
-    /** @param {number} reportId - Report. @returns {Promise<TechnicalPrescription[]>} Prescriptions of the report. */
-    getPrescriptionsByReportId(reportId) {
-        return this.#prescriptionsEndpoint.getByReportId(reportId);
-    }
-
-    /** @returns {Promise<PestReport[]>} All pest reports. */
-    getReports() {
-        return this.#reportsEndpoint.getAll().then(response => PestReportAssembler.toEntitiesFromResponse(response));
-    }
-
-    /** @returns {Promise<FieldInspection[]>} All field inspections. */
-    getInspections() {
-        return this.#inspectionsEndpoint.getAll().then(response => FieldInspectionAssembler.toEntitiesFromResponse(response));
-    }
-
-    /** @returns {Promise<TechnicalPrescription[]>} All technical prescriptions. */
-    getPrescriptions() {
-        return this.#prescriptionsEndpoint.getAll().then(response => TechnicalPrescriptionAssembler.toEntitiesFromResponse(response));
+    getPrescriptionsByPlot(plotId) {
+        return this.#prescriptionsEndpoint.getByPlot(plotId);
     }
 
     /**
@@ -102,8 +83,12 @@ export class CropHealthApi extends BaseApi {
      * @param {import('../domain/model/commands/schedule-field-inspection.command.js').ScheduleFieldInspectionCommand} command - Visit data.
      * @returns {Promise<FieldInspection>} Created inspection.
      */
-    scheduleInspection(command) {
-        return this.#inspectionsEndpoint.create(FieldInspectionAssembler.toResourceFromEntity(new FieldInspection({ ...command })))
+    scheduleInspection(command, agronomistId) {
+        return this.#inspectionsEndpoint.create({
+            pestReportId: command.reportId,
+            agronomistId,
+            scheduledAt: command.scheduledAt
+        })
             .then(response => FieldInspectionAssembler.toEntityFromResource(response.data));
     }
 
@@ -112,7 +97,14 @@ export class CropHealthApi extends BaseApi {
      * @returns {Promise<TechnicalPrescription>} Created prescription.
      */
     issuePrescription(command) {
-        return this.#prescriptionsEndpoint.create(TechnicalPrescriptionAssembler.toResourceFromEntity(new TechnicalPrescription({ ...command })))
+        return this.#prescriptionsEndpoint.create({
+            pestReportId: command.reportId,
+            agronomistId: command.agronomistId,
+            product: command.recommendedProducts,
+            dosage: command.dosage,
+            instructions: command.instructions,
+            applicationDate: command.applicationDate
+        })
             .then(response => TechnicalPrescriptionAssembler.toEntityFromResource(response.data));
     }
 
@@ -122,9 +114,8 @@ export class CropHealthApi extends BaseApi {
             .then(response => PestReportAssembler.toEntityFromResource(response.data));
     }
 
-    /** @param {FieldInspection} inspection - Inspection to save. @returns {Promise<FieldInspection>} Saved inspection. */
-    updateInspection(inspection) {
-        return this.#inspectionsEndpoint.update(inspection.id, FieldInspectionAssembler.toResourceFromEntity(inspection))
+    completeInspection(id, findings) {
+        return this.http.patch(`${this.#inspectionsEndpoint.endpointPath}/${id}/completion`, { findings })
             .then(response => FieldInspectionAssembler.toEntityFromResource(response.data));
     }
 }
