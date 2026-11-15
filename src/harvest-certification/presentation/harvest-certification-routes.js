@@ -10,7 +10,7 @@ const harvestCertificationRoutes = [
 
 /** Public QR verification (under `/verify`), shown without the shell or a session. */
 export const publicTraceabilityRoutes = [
-    {   path: ':token',         name: 'public-traceability',                 component: publicTraceability,  meta: { title: 'routes.public-traceability' } }
+    {   path: ':token?',         name: 'public-traceability',                 component: publicTraceability,  meta: { title: 'routes.public-traceability' } }
 ];
 
 export default harvestCertificationRoutes;

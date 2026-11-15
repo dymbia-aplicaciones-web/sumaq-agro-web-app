@@ -49,6 +49,11 @@ export class HarvestCertificationApi extends BaseApi {
     }
 
     /** @param {string} verificationToken - QR token. @returns {Promise<import('axios').AxiosResponse>} Matching certificates. */
+    async getPublicTraceability(number, hash) {
+        const {data} = await this.http.get('/public/traceability', {params: {number, hash}});
+        return data;
+    }
+
     getCertificatesByToken(verificationToken) {
         return this.#certificatesEndpoint.getAllBy({ verificationToken });
     }

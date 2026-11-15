@@ -1,4 +1,6 @@
 <script setup>
+import {certificateVerificationRoute} from "../utils/certificate-verification.js";
+import {useRouter} from "vue-router";
 import {computed} from "vue";
 import {useI18n} from "vue-i18n";
 import {formatDate, formatNumber} from "../../../shared/presentation/format.js";
@@ -13,8 +15,9 @@ const props = defineProps({
 });
 const { t, locale } = useI18n();
 
+const router = useRouter();
 const token = computed(() => props.certificate?.verificationToken ?? props.draft?.verificationToken);
-const verificationUrl = computed(() => token.value ? `${window.location.origin}/verify/${encodeURIComponent(token.value)}` : '');
+const verificationUrl = computed(() => props.certificate ? window.location.origin + router.resolve(certificateVerificationRoute(props.certificate)).href : token.value ? `${window.location.origin}/verify/${encodeURIComponent(token.value)}` : '');
 const qrImageUrl = computed(() => `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verificationUrl.value)}`);
 const dateTime = value => formatDate(value, locale.value, { dateStyle: 'short', timeStyle: 'short' });
 </script>

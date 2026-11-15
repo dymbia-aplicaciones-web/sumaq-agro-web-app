@@ -209,7 +209,16 @@ const useHarvestCertificationStore = defineStore('harvest-certification', () => 
      * @param {string} token - QR token.
      * @returns {Promise<{certificate: Object, batch: HarvestBatch|null}|null>} `null` when the token is unknown.
      */
-    function verifyCertificate(token) {
+    function verifyCertificate(token, number, hash) {
+        if (number && hash) {
+            return harvestCertificationApi.getPublicTraceability(number, hash)
+                .then(traceability => ({traceability}))
+                .catch(error => {
+                    if (error.response?.status === 404) return null;
+                    throw error;
+                });
+        }
+        if (!token) return Promise.resolve(null);
         return harvestCertificationApi.getCertificatesByToken(token.trim())
             .then(response => {
                 const [certificate] = QualityCertificateAssembler.toEntitiesFromResponse(response);
