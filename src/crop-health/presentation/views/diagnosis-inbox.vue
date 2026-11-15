@@ -63,7 +63,10 @@ const remove = (id) => store.deleteReport(id, () => {
                    :disabled="store.scopeLoading" class="farmer-plot" @plot-selected="store.selectPlot"/>
     <farmer-advisory-panel v-if="store.canReport && store.selectedPlot" :plot-id="Number(store.selectedPlot.id)"/>
 
-    <page-header :eyebrow="t('crop-health.clinical-eyebrow')" :title="t('crop-health.inbox-title')"/>
+    <page-header  :breadcrumbs="[{label: 'option.diagnosis-inbox'}]" :title="t('crop-health.inbox-title')" :subtitle="t('crop-health.inbox-description')"/>
+    <section class="inbox-panel">
+      <header class="inbox-panel-heading">
+      <h2>{{ t('option.diagnosis-inbox') }}</h2>
     <nav class="flex flex-wrap gap-3">
       <pv-button v-if="store.canPrescribe" outlined class="sa-pill" :label="t('crop-health.advisor.plots')"
                  @click="router.push('/crop-health/assigned-plots')"/>
@@ -72,6 +75,7 @@ const remove = (id) => store.deleteReport(id, () => {
       <pv-button outlined class="sa-pill" :label="t('crop-health.inspections-title')" @click="router.push('/crop-health/inspections')"/>
       <pv-button outlined class="sa-pill" :label="t('crop-health.history-title')" @click="router.push('/crop-health/prescriptions')"/>
     </nav>
+      </header>
 
     <p v-if="store.writeError" class="sa-error m-0" role="alert">{{ t(store.writeError) }}</p>
     <pv-progress-bar v-if="store.clinicalLoading || store.saving" mode="indeterminate" style="height: 4px" :aria-label="t('common.loading')"/>
@@ -130,6 +134,7 @@ const remove = (id) => store.deleteReport(id, () => {
         <message-card v-if="reports.length === 0" icon="pi pi-inbox" :message="t('crop-health.advisor.no-results')"/>
       </div>
     </template>
+    </section>
   </div>
 </template>
 
@@ -213,4 +218,7 @@ const remove = (id) => store.deleteReport(id, () => {
     max-width: none;
   }
 }
+.inbox-panel { display: grid; gap: 16px; background: white; border: 1px solid var(--sa-outline-variant); border-radius: 16px; padding: clamp(14px, 2vw, 24px); }
+.inbox-panel-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.inbox-panel-heading h2 { margin: 0; font-size: 1.125rem; }
 </style>
