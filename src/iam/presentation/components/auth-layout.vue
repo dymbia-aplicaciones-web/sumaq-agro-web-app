@@ -264,7 +264,4 @@ const images = import.meta.env.BASE_URL + 'images/';
   }
 }
 
-.auth-language { border-radius: 999px; overflow: hidden; background: #fff; }
-.auth-language :deep(.p-togglebutton) { background: #fff; color: #172b21; }
-.auth-language :deep(.p-togglebutton-checked) { background: #d5e7cd; }
 </style>

@@ -31,7 +31,5 @@ const router = useRouter();
 .subscriptions-shell { background: #f1f2ea; }
 strong { font-size: 1.35rem; }
 strong span { color: #076600; }
-.shell-language { width: auto; border-radius: 999px; overflow: hidden; background: transparent; }
-.shell-language :deep(.p-togglebutton) { background: transparent; }
-.shell-language :deep(.p-togglebutton-checked) { background: #d5e7cd; }
+.shell-language { width: auto; }
 </style>
