@@ -650,7 +650,9 @@
         "ruc-error": "El RUC debe tener 11 dígitos.",
         "phone-error": "Ingresa un teléfono válido.",
         "submit": "Registrar cooperativa",
-        "saving": "Registrando..."
+        "saving": "Registrando...",
+        "existing": "Tu cuenta ya tiene una cooperativa registrada.",
+        "error": "No pudimos completar el registro. Inténtalo de nuevo."
       },
       "dashboard": {
         "breadcrumb": "Dashboard",
@@ -686,7 +688,69 @@
         "pending": "Próximamente",
         "no-cooperative-title": "Aún no registras una cooperativa",
         "no-cooperative-message": "Registra los datos institucionales para comenzar a administrar a tus socios.",
-        "register-cooperative": "Registrar cooperativa"
+        "register-cooperative": "Registrar cooperativa",
+        "no-metrics": "Todavía no hay indicadores para esta cooperativa.",
+        "tab-title": "Dashboard institucional"
+      },
+      "members": {
+        "demo-account": "Cuenta de agricultor de prueba",
+        "link-account": "Vincular cuenta",
+        "link-account-error": "No se pudo vincular la cuenta. Verifica que no esté vinculada a otro socio de la cooperativa.",
+        "collection": "Historial de acopio",
+        "net-total": "Peso neto acumulado",
+        "net-weight": "Peso neto",
+        "no-collection": "Este socio todavía no tiene lotes de acopio registrados.",
+        "certificates": "Certificados emitidos",
+        "no-certificates": "Este socio todavía no tiene certificados emitidos.",
+        "verify-certificate": "Verificar certificado",
+        "certificate-ACTIVE": "Vigente",
+        "certificate-REVOKED": "Revocado",
+        "edit": "Editar datos del socio",
+        "link-plot": "Añadir lote",
+        "no-linkable-plots": "No hay parcelas delimitadas disponibles para vincular.",
+        "link-error": "No se pudo vincular la parcela. Comprueba que tenga una campaña activa de papa o café.",
+        "link-account-first": "El socio necesita una cuenta vinculada para incorporar sus parcelas.",
+        "not-found": "No encontramos ese socio en el padrón de tu cooperativa.",
+        "title": "Padrón de socios",
+        "subtitle": "Consulta los socios y las parcelas vinculadas a tu cooperativa.",
+        "search": "Buscar por nombre, DNI o código",
+        "add": "Agregar nuevo socio",
+        "new-title": "Incorporar nuevo socio",
+        "phone": "Contacto",
+        "community": "Sector",
+        "save": "Guardar",
+        "validation": "Completa el nombre, un DNI de 8 dígitos y un teléfono válido.",
+        "duplicate": "Ya existe un socio con ese DNI.",
+        "save-error": "No se pudo guardar el socio.",
+        "back": "Volver al padrón",
+        "dossier": "Expediente del socio",
+        "no-plots": "Este socio aún no tiene parcelas vinculadas.",
+        "view": "Ver",
+        "name": "Socio",
+        "status": "Estado",
+        "plots": "Parcelas",
+        "active": "Activo",
+        "inactive": "Inactivo",
+        "error": "No se pudo cargar el padrón.",
+        "empty": "Todavía no hay socios registrados.",
+        "no-results": "Ningún socio coincide con la búsqueda.",
+        "kpi-total": "Socios registrados",
+        "kpi-active": "Socios activos",
+        "kpi-plots": "Parcelas vinculadas",
+        "filter-all": "Todos",
+        "filter-status": "Filtrar por estado",
+        "clear-search": "Limpiar búsqueda",
+        "error-name": "Ingresa el nombre del socio",
+        "error-dni": "El DNI debe tener 8 dígitos",
+        "error-phone": "Ingresa un teléfono válido",
+        "dni-hint": "8 dígitos"
+      },
+      "supervision": {
+        "in-charge": "Supervisada por",
+        "none": "Sin asesor asignado.",
+        "assign": "Asignar",
+        "release": "Quitar asignación",
+        "no-team": "Invita agrónomos con cuenta vinculada para asignar la supervisión."
       }
     },
     "settings": {
@@ -867,7 +931,8 @@
         "save": "No se pudo guardar la vinculación. Conservamos tu selección para reintentar.",
         "denied": "Solo puedes vincular asesores disponibles a tus propias parcelas.",
         "conflict": "Hay asignaciones duplicadas para esta parcela. Solicita revisar los datos."
-      }
+      },
+      "by-director": "La directiva de tu cooperativa asigna el asesor de cada parcela."
     }
   },
   "harvest-certification": {

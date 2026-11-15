@@ -26,12 +26,15 @@ export class CooperativeMember {
      * @param {?number} [props.userId=null] - Linked account; absent legacy links never imply equality with the membership ID.
      * @param {MemberPlot[]} [props.plots=[]] - Plot references owned by this member, supplied by the Profiles read model.
      */
-    constructor({ id, cooperativeId, fullName, active, userId, plots }) {
+    constructor({ id, cooperativeId, fullName, active, userId, dni = '', phone = '', community = '', plots }) {
         this.id = id;
         this.cooperativeId = cooperativeId;
         this.fullName = fullName;
         this.active = active;
         this.userId = userId ?? null;
+        this.dni = dni;
+        this.phone = phone;
+        this.community = community;
         this.plots = plots ?? [];
     }
 

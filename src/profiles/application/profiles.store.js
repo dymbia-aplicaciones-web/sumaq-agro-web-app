@@ -1,3 +1,10 @@
+import {PlotAdvisorAssignmentsApi} from '../infrastructure/plot-advisor-assignments.api.js';
+import {FieldManagementApi} from '../../field-management/infrastructure/field-management-api.js';
+import {HarvestCertificationApi} from '../../harvest-certification/infrastructure/harvest-certification-api.js';
+import {HarvestBatchAssembler} from '../../harvest-certification/infrastructure/harvest-batch.assembler.js';
+import {QualityCertificateAssembler} from '../../harvest-certification/infrastructure/quality-certificate.assembler.js';
+import {DEMO_USERS} from '../../iam/infrastructure/demo-session.storage.js';
+import useIamStore from "../../iam/application/iam.store.js";
 /**
  * Application service store for the Profiles bounded context (Angular `ProfilesStore`).
  * It coordinates the farmer profile and the institutional Profile read models
@@ -13,6 +20,9 @@ import {FarmerProfile} from "../domain/model/entities/farmer-profile.entity.js";
 import {TechnicalAdvisor} from "../domain/model/entities/technical-advisor.entity.js";
 
 const profilesApi = new ProfilesApi();
+const assignmentsApi = new PlotAdvisorAssignmentsApi();
+const fieldsApi = new FieldManagementApi();
+const harvestApi = new HarvestCertificationApi();
 
 /**
  * Reactive store that exposes Profiles commands and queries.
@@ -111,13 +121,24 @@ const useProfilesStore = defineStore('profiles', () => {
      * Loads the role-specific read model for the active cooperative director.
      * @param {number} directorUserId - Director.
      */
-    function loadCooperativeDashboard(directorUserId) {
+    async function loadCooperativeDashboard(directorUserId) {
+        const director = iam.currentUser;
+        dashboard.value = null;
+        cooperative.value = null;
         loading.value = true;
         error.value = null;
-        profilesApi.getInstitutionalDashboard(directorUserId)
-            .then(loaded => dashboard.value = loaded)
-            .catch(cause => error.value = cause.message)
-            .finally(() => loading.value = false);
+        try {
+            const organization = await profilesApi.getCooperativeByDirector(directorUserId);
+            if (iam.currentUser !== director) return;
+            cooperative.value = organization;
+            if (!organization) return;
+            const loaded = await profilesApi.getInstitutionalDashboard(directorUserId);
+            if (iam.currentUser === director) dashboard.value = loaded;
+        } catch (cause) {
+            if (iam.currentUser === director) error.value = cause.message;
+        } finally {
+            if (iam.currentUser === director) loading.value = false;
+        }
     }
 
     /**
@@ -231,7 +252,156 @@ const useProfilesStore = defineStore('profiles', () => {
             .finally(() => saving.value = false);
     }
 
+    const iam = useIamStore();
+
+    async function registerCooperative(details) {
+        const director = iam.currentUser;
+        const key = 'profiles.cooperative.registration';
+        if (director?.experience !== 'COOPERATIVE_DIRECTOR' || saving.value) return false;
+        saving.value = true;
+        try {
+            const existing = await profilesApi.getCooperativeByDirector(director.id);
+            if (iam.currentUser !== director) return false;
+            if (existing) throw new Error(key + '.existing');
+            const registered = await profilesApi.registerCooperative(director.id, details);
+            if (iam.currentUser !== director) return false;
+            cooperative.value = registered;
+            return true;
+        } catch (cause) {
+            if (iam.currentUser !== director) return false;
+            throw new Error(cause.message === key + '.existing' ? cause.message : key + '.error');
+        } finally {
+            saving.value = false;
+        }
+    }
+
+    async function loadMemberDirectory(directorId) {
+        const organization = await profilesApi.getCooperativeByDirector(directorId);
+        if (!organization) return null;
+        const directory = await profilesApi.getCooperativeMembers(organization.id);
+        return { organization, directory };
+    }
+
+    async function saveMember(organization, details, id) {
+        const director = iam.currentUser;
+        const key = 'profiles.cooperative.members';
+        if (director?.experience !== 'COOPERATIVE_DIRECTOR' ||
+            director.id !== organization.directorUserId) throw new Error(key + '.save-error');
+
+        const directory = await profilesApi.getCooperativeMembers(organization.id);
+        if (iam.currentUser !== director || (id != null && !directory.some(member => member.id === id)))
+            throw new Error(key + '.save-error');
+        if (directory.some(member => member.dni === details.dni && member.id !== id))
+            throw new Error(key + '.duplicate');
+
+        return id == null
+            ? profilesApi.addCooperativeMember(organization.id, details)
+            : profilesApi.updateCooperativeMember(id, details);
+    }
+
+    async function readMember(organization, id) {
+        const director = iam.currentUser;
+        const denied = () => new Error('profiles.advisory.errors.denied');
+        if (director?.experience !== 'COOPERATIVE_DIRECTOR' || director.id !== organization.directorUserId)
+            throw denied();
+        const directory = await profilesApi.getCooperativeMembers(organization.id);
+        const member = directory.find(item => item.id === id);
+        const checkSession = () => {
+            if (iam.currentUser !== director || !member) throw denied();
+        };
+        checkSession();
+        return { member, directory, checkSession };
+    }
+
+    async function linkMemberAccount(organization, id, userId) {
+        const { member, directory } = await readMember(organization, id);
+        if (!member.active || member.userId || directory.some(item => item.userId === userId) ||
+            !DEMO_USERS.some(user => user.id === userId && user.experience === 'FARMER'))
+            throw new Error('profiles.cooperative.members.link-account-error');
+        return profilesApi.linkMemberAccount(id, userId);
+    }
+
+    async function linkablePlots(member) {
+        if (!member.userId) return [];
+        const plots = await fieldsApi.getPlotsByOwner(member.userId);
+        return plots.filter(plot => plot.hasPolygon() && !member.plots.some(item => item.id === plot.id));
+    }
+
+    async function linkMemberPlot(organization, id, plotId) {
+        const { member, checkSession } = await readMember(organization, id);
+        const plot = (await linkablePlots(member)).find(item => item.id === plotId);
+        if (!plot) throw new Error('profiles.cooperative.members.link-error');
+        const campaigns = await fieldsApi.getCampaignsByPlot(plotId);
+        const campaign = campaigns.find(item => item.isActive());
+        if (!campaign || !['ANDEAN_POTATO', 'SPECIALTY_COFFEE'].includes(campaign.cropType))
+            throw new Error('profiles.cooperative.members.link-error');
+        const { latitude, longitude } = plot.boundary[0];
+        checkSession();
+        return profilesApi.linkMemberPlot(member, {
+            id: plot.id, name: plot.name, region: plot.region,
+            coordinates: latitude + ', ' + longitude, campaignId: campaign.id,
+            variety: campaign.seedVariety, cropType: campaign.cropType
+        });
+    }
+
+    async function loadMemberHarvest(member) {
+        const [batchesResponse, certificatesResponse] = await Promise.all([
+            harvestApi.getBatchesByCooperative(member.cooperativeId), harvestApi.getCertificates()
+        ]);
+        const batches = HarvestBatchAssembler.toEntitiesFromResponse(batchesResponse)
+            .filter(batch => batch.cooperativeId === member.cooperativeId && batch.memberId === member.id)
+            .sort((a, b) => b.collectedAt.localeCompare(a.collectedAt));
+        const batchIds = new Set(batches.map(batch => batch.id));
+        const certificates = QualityCertificateAssembler.toEntitiesFromResponse(certificatesResponse)
+            .filter(certificate => batchIds.has(certificate.harvestBatchId))
+            .sort((a, b) => b.issuedAt.localeCompare(a.issuedAt));
+        return { batches, certificates };
+    }
+
+    async function supervisePlot(organization, memberId, plotId, advisorUserId) {
+        const { member, checkSession } = await readMember(organization, memberId);
+        const denied = () => new Error('profiles.advisory.errors.denied');
+        if (!member.userId || !member.plots.some(plot => plot.id === plotId)) throw denied();
+        const previous = await assignmentsApi.getByPlot(plotId);
+        if (previous && previous.producerUserId !== member.userId) throw denied();
+        const releasing = advisorUserId == null;
+        if (releasing && previous?.status !== 'ACTIVE') return;
+        if (!releasing) {
+            const team = await profilesApi.getTechnicalAdvisors(organization.id);
+            if (!team.some(advisor => advisor.userId === advisorUserId)) throw denied();
+        }
+        checkSession();
+        const now = new Date().toISOString();
+        const closing = previous?.status === 'ACTIVE' && (releasing || previous.advisorUserId !== advisorUserId);
+        const history = [...(previous?.history ?? [])];
+        if (closing) history.push({ advisorUserId: previous.advisorUserId, assignedAt: previous.assignedAt, endedAt: now });
+        return assignmentsApi.save({
+            id: previous?.id ?? plotId, plotId, producerUserId: member.userId,
+            advisorUserId: releasing ? previous.advisorUserId : advisorUserId,
+            status: releasing ? 'INACTIVE' : 'ACTIVE',
+            assignedAt: releasing || (previous?.status === 'ACTIVE' && !closing) ? previous.assignedAt : now,
+            history
+        }, previous != null);
+    }
+
+    async function loadPlotSupervision(organization, plots) {
+        const [team, assignments] = await Promise.all([
+            profilesApi.getTechnicalAdvisors(organization.id),
+            Promise.all(plots.map(plot => assignmentsApi.getByPlot(plot.id)))
+        ]);
+        return { team: team.filter(advisor => Number.isSafeInteger(advisor.userId) && advisor.userId > 0), assignments };
+    }
+
     return {
+        linkMemberAccount,
+        linkablePlots,
+        linkMemberPlot,
+        loadMemberHarvest,
+        supervisePlot,
+        loadPlotSupervision,
+        registerCooperative,
+        loadMemberDirectory,
+        saveMember,
         profile,
         cooperative,
         members,

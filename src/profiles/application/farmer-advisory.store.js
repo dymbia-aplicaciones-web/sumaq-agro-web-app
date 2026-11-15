@@ -31,10 +31,12 @@ const useFarmerAdvisoryStore = defineStore('farmer-advisory', () => {
     const savingState = ref(false);
     const errorState = ref(null);
     const ready = ref(false);
+    const hasActiveMembership = ref(false);
     // Increasing it makes the answers of a previous participant be ignored.
     let revision = 0;
 
     const current = computed(() => participant.value === session.currentUser && session.currentUser?.experience === 'FARMER');
+    const advisorAssignedByDirector = computed(() => current.value && hasActiveMembership.value);
     const advisors = computed(() => current.value ? advisorState.value : []);
     const assignments = computed(() => current.value
         ? assignmentState.value.filter(item => owns(item.plotId) && item.producerUserId === session.currentUser?.id)
@@ -54,13 +56,19 @@ const useFarmerAdvisoryStore = defineStore('farmer-advisory', () => {
         loadingState.value = false;
         savingState.value = false;
         ready.value = false;
+        hasActiveMembership.value = false;
         if (user?.experience !== 'FARMER') return;
         loadingState.value = true;
-        Promise.all([profiles.getAvailableAdvisors(), api.getByProducer(user.id)])
-            .then(([loadedAdvisors, loadedAssignments]) => {
+        Promise.all([
+            profiles.getAvailableAdvisors(),
+            api.getByProducer(user.id),
+            profiles.getMembershipsByUser(user.id)
+        ])
+            .then(([loadedAdvisors, loadedAssignments, memberships]) => {
                 if (!isCurrent(started)) return;
                 advisorState.value = loadedAdvisors;
                 assignmentState.value = loadedAssignments;
+                hasActiveMembership.value = memberships.some(member => member.active);
                 loadingState.value = false;
                 ready.value = true;
             })
@@ -93,7 +101,7 @@ const useFarmerAdvisoryStore = defineStore('farmer-advisory', () => {
      * @returns {boolean} `true` when this loaded producer can assign the referenced plot.
      */
     function canAssign(plotId) {
-        return current.value && ready.value && !loading.value && !saving.value && owns(plotId);
+        return current.value && ready.value && !advisorAssignedByDirector.value && !loading.value && !saving.value && owns(plotId);
     }
 
     /**
@@ -157,7 +165,7 @@ const useFarmerAdvisoryStore = defineStore('farmer-advisory', () => {
     // Reload every time the signed-in user changes.
     watch(() => session.currentUser, () => reload(), { immediate: true });
 
-    return { advisors, assignments, loading, saving, error, reload, assignmentFor, advisorFor, canAssign, assign };
+    return { advisors, assignments, advisorAssignedByDirector, loading, saving, error, reload, assignmentFor, advisorFor, canAssign, assign };
 });
 
 export default useFarmerAdvisoryStore;
