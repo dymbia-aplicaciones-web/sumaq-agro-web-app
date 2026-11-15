@@ -168,7 +168,15 @@ async function save() {
     <router-link v-if="route.params.id" :to="{ ...directoryRoute, state: { memberSearch: query } }">
       {{ t(key + '.back') }}
     </router-link>
-    <h1>{{ t(key + (route.params.id ? '.dossier' : '.title')) }}</h1>
+    <header class="member-heading">
+      <div>
+        <router-link v-if="!route.params.id" :to="{name: 'profiles-cooperative-dashboard'}">{{ t('profiles.cooperative.dashboard.breadcrumb') }}</router-link>
+        <h1>{{ t(key + (route.params.id ? '.dossier' : '.title')) }}</h1>
+        <p v-if="!route.params.id">{{ t(key + '.subtitle') }}</p>
+      </div>
+      <pv-button v-if="status === 'ready' && !route.params.id && !open" class="member-add" icon="pi pi-user-plus"
+                 :label="t(key + '.add')" @click="start()"/>
+    </header>
 
     <pv-progress-bar v-if="status === 'loading'" mode="indeterminate" :aria-label="t('common.loading')"/>
     <template v-else-if="status === 'error'">
@@ -179,6 +187,47 @@ async function save() {
       <pv-message severity="info">{{ t('profiles.cooperative.dashboard.no-cooperative-message') }}</pv-message>
       <router-link :to="registrationRoute">{{ t('profiles.cooperative.registration.title') }}</router-link>
     </template>
+    <section v-else-if="open" class="member-editor">
+      <h2>{{ t(key + (selected ? '.edit' : '.new-title')) }}</h2>
+      <form class="member-form" novalidate @submit.prevent="save">
+        <div class="member-field">
+          <label for="member-name">{{ t(key + '.name') }}</label>
+          <pv-icon-field>
+            <pv-input-icon class="pi pi-user"/>
+            <pv-input-text id="member-name" v-model="form.fullName" maxlength="200" required fluid/>
+          </pv-icon-field>
+          <small v-if="submitted && !validName">{{ t(key + '.error-name') }}</small>
+        </div>
+        <div class="member-field">
+          <label for="member-dni">DNI</label>
+          <pv-icon-field>
+            <pv-input-icon class="pi pi-id-card"/>
+            <pv-input-text id="member-dni" v-model="form.dni" inputmode="numeric" maxlength="8" required fluid/>
+          </pv-icon-field>
+          <small v-if="submitted && !validDni">{{ t(key + '.error-dni') }}</small>
+        </div>
+        <div class="member-field">
+          <label for="member-phone">{{ t(key + '.phone') }}</label>
+          <pv-icon-field>
+            <pv-input-icon class="pi pi-phone"/>
+            <pv-input-text id="member-phone" v-model="form.phone" type="tel" maxlength="20" required fluid/>
+          </pv-icon-field>
+          <small v-if="submitted && !validPhone">{{ t(key + '.error-phone') }}</small>
+        </div>
+        <div class="member-field">
+          <label for="member-community">{{ t(key + '.community') }}</label>
+          <pv-icon-field>
+            <pv-input-icon class="pi pi-map-marker"/>
+            <pv-input-text id="member-community" v-model="form.community" maxlength="100" fluid/>
+          </pv-icon-field>
+        </div>
+        <pv-message v-if="error" severity="error">{{ t(error) }}</pv-message>
+        <div class="member-actions">
+          <pv-button outlined :label="t('common.cancel')" :disabled="busy" @click="open = false"/>
+          <pv-button type="submit" :label="t(key + '.save')" :loading="busy"/>
+        </div>
+      </form>
+    </section>
     <template v-else-if="route.params.id">
       <pv-message v-if="!selected" severity="warn">{{ t(key + '.not-found') }}</pv-message>
       <pv-card v-else>
@@ -245,7 +294,6 @@ async function save() {
       </pv-card>
     </template>
     <template v-else>
-      <p>{{ t(key + '.subtitle') }}</p>
       <div v-if="members.length" class="flex flex-wrap gap-3">
         <pv-card v-for="(count, label) in stats" :key="label">
           <template #title>{{ count }}</template>
@@ -255,7 +303,6 @@ async function save() {
       <div class="flex flex-wrap gap-2">
         <pv-input-text v-model="query" type="search" :placeholder="t(key + '.search')" :aria-label="t(key + '.search')"/>
         <pv-select v-model="filter" :options="filters" option-label="label" option-value="value" :aria-label="t(key + '.filter-status')"/>
-        <pv-button icon="pi pi-plus" :label="t(key + '.add')" @click="start()"/>
       </div>
       <pv-data-table :value="visibleMembers" data-key="id" paginator :rows="10">
         <template #empty>{{ t(key + (members.length ? '.no-results' : '.empty')) }}</template>
@@ -276,26 +323,20 @@ async function save() {
       </pv-data-table>
     </template>
 
-    <pv-dialog v-model:visible="open" modal :closable="!busy" :dismissable-mask="false"
-               :header="t(key + (selected ? '.edit' : '.new-title'))">
-      <form class="flex flex-column gap-2" novalidate @submit.prevent="save">
-        <label for="member-name">{{ t(key + '.name') }}</label>
-        <pv-input-text id="member-name" v-model="form.fullName" maxlength="200" required/>
-        <small v-if="submitted && !validName">{{ t(key + '.error-name') }}</small>
-        <label for="member-dni">DNI</label>
-        <pv-input-text id="member-dni" v-model="form.dni" inputmode="numeric" maxlength="8" required/>
-        <small v-if="submitted && !validDni">{{ t(key + '.error-dni') }}</small>
-        <label for="member-phone">{{ t(key + '.phone') }}</label>
-        <pv-input-text id="member-phone" v-model="form.phone" type="tel" maxlength="20" required/>
-        <small v-if="submitted && !validPhone">{{ t(key + '.error-phone') }}</small>
-        <label for="member-community">{{ t(key + '.community') }}</label>
-        <pv-input-text id="member-community" v-model="form.community" maxlength="100"/>
-        <pv-message v-if="error" severity="error">{{ t(error) }}</pv-message>
-        <div class="flex justify-content-end gap-2 mt-2">
-          <pv-button outlined :label="t('common.cancel')" :disabled="busy" @click="open = false"/>
-          <pv-button type="submit" :label="t(key + '.save')" :loading="busy"/>
-        </div>
-      </form>
-    </pv-dialog>
+
   </section>
 </template>
+
+<style scoped>
+.member-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 12px; }
+.member-heading h1 { margin: 4px 0; font-size: clamp(1.7rem, 4vw, 2.25rem); }
+.member-heading p { margin: 0; }
+.member-editor { padding: clamp(16px, 3vw, 28px); background: white; border: 1px solid var(--sa-outline-variant); border-radius: 16px; }
+.member-editor h2 { margin: 0 0 20px; padding-bottom: 12px; border-bottom: 1px solid var(--sa-outline-variant); color: #00463f; font-size: 1.2rem; }
+.member-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 16px; }
+.member-field { display: grid; align-content: start; gap: 6px; }
+.member-form > :deep(.p-message), .member-actions { grid-column: 1 / -1; }
+.member-actions { display: flex; justify-content: flex-end; gap: 12px; padding-top: 16px; border-top: 1px solid var(--sa-outline-variant); }
+.member-add.p-button, .member-actions :deep(.p-button) { border-radius: 999px; }
+.member-add.p-button, .member-actions :deep(.p-button[type="submit"]) { background: #00463f; border-color: #00463f; }
+</style>
