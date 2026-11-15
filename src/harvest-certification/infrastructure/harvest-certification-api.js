@@ -1,8 +1,8 @@
 import {BaseApi} from "../../shared/infrastructure/base-api.js";
 import {BaseEndpoint} from "../../shared/infrastructure/base-endpoint.js";
 
-const harvestBatchesEndpointPath       = import.meta.env.VITE_HARVEST_BATCHES_ENDPOINT_PATH;
-const qualityCertificatesEndpointPath  = import.meta.env.VITE_QUALITY_CERTIFICATES_ENDPOINT_PATH;
+const harvestBatchesEndpointPath       = import.meta.env.VITE_HARVEST_BATCHES_ENDPOINT_PATH || '/harvest-batches';
+const qualityCertificatesEndpointPath  = import.meta.env.VITE_QUALITY_CERTIFICATES_ENDPOINT_PATH || '/quality-certificates';
 
 /**
  * Infrastructure gateway for Harvest Certification bounded-context endpoints.
