@@ -29,9 +29,8 @@ const monitor = (plotId) => {
 
 <template>
   <div class="page advisor-plots">
-    <page-header :title="t('crop-health.advisor.plots')" :subtitle="t('crop-health.advisor.scope-notice')"/>
+    <page-header :breadcrumbs="[{ label: 'option.diagnosis-inbox', link: '/crop-health/inbox' }, {label: 'crop-health.advisor.plots'}]" :title="t('crop-health.advisor.plots')" :subtitle="t('crop-health.advisor.scope-notice')"/>
     <nav class="flex flex-wrap gap-3">
-      <pv-button outlined class="sa-pill" :label="t('crop-health.inbox-title')" @click="router.push('/crop-health/inbox')"/>
       <pv-button text :label="t('crop-health.advisor.refresh')" :disabled="store.loading || store.saving" @click="store.retryScope()"/>
     </nav>
     <pv-progress-bar v-if="store.clinicalLoading" mode="indeterminate" style="height: 4px" :aria-label="t('common.loading')"/>
@@ -62,12 +61,18 @@ const monitor = (plotId) => {
 
 <style scoped>
 .advisor-plots {
-  max-width: 1100px;
+  width: min(100%, 1100px);
+  margin-inline: auto;
 }
 
 .plots {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
+ .plots :deep(.p-card) { background: var(--sa-surface-container-low); }
+.plots :deep(.p-card-title) { font-size: 1.35rem; font-weight: 500; }
+.plots :deep(.p-card-subtitle) { color: inherit; font-weight: 600; }
+.plots :deep(.p-card-footer .p-button) { border-radius: 999px; }
+@media (max-width: 760px) { .plots { grid-template-columns: 1fr; } }
 </style>
