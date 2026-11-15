@@ -73,8 +73,12 @@ export class FieldManagementApi extends BaseApi {
      * @param {import('../domain/model/entities/field-plot.entity.js').FieldPlot} plot - The plot to update.
      * @returns {Promise<import('../domain/model/entities/field-plot.entity.js').FieldPlot>} The updated plot.
      */
-    updatePlot(plot) {
-        return this.#plotsEndpoint.update(plot.id, FieldPlotAssembler.toResourceFromEntity(plot))
+    updatePlot(plot, operation) {
+        const resource = FieldPlotAssembler.toResourceFromEntity(plot);
+        const body = operation === 'polygon'
+            ? {coordinates: plot.boundary.map(({latitude, longitude}) => ({latitude, longitude}))}
+            : resource.soilBaseline;
+        return this.http.put(`/field-plots/${plot.id}/${operation}`, body)
             .then(response => FieldPlotAssembler.toEntityFromResource(response.data));
     }
 
@@ -114,7 +118,11 @@ export class FieldManagementApi extends BaseApi {
      * @returns {Promise<import('../domain/model/entities/crop-campaign.entity.js').CropCampaign>} The updated campaign.
      */
     updateCampaign(campaign) {
-        return this.#campaignsEndpoint.update(campaign.id, CropCampaignAssembler.toResourceFromEntity(campaign))
+        const path = `/crop-campaigns/${campaign.id}`;
+        const request = campaign.status === 'FINISHED'
+            ? this.http.post(`${path}/closures`).then(() => this.http.get(path))
+            : this.http.patch(path, CropCampaignAssembler.toResourceFromEntity(campaign));
+        return request
             .then(response => CropCampaignAssembler.toEntityFromResource(response.data));
     }
 

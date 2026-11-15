@@ -1,7 +1,7 @@
 import {BaseEndpoint} from "../../../shared/infrastructure/base-endpoint.js";
 import {PaymentAssembler} from "../assemblers/payment.assembler.js";
 
-const paymentsEndpointPath = import.meta.env.VITE_PAYMENTS_ENDPOINT_PATH;
+const paymentsEndpointPath = "/subscriptions/me/payments";
 
 /**
  * HTTP endpoint for the payments resource (`/payments`).
@@ -21,6 +21,6 @@ export class PaymentsApiEndpoint extends BaseEndpoint {
      * @returns {Promise<import('../../domain/model/entities/payment.entity.js').Payment[]>} Payments.
      */
     getBySubscription(subscriptionId) {
-        return this.getAllBy({ subscriptionId }).then(response => PaymentAssembler.toEntitiesFromResponse(response));
+        return this.getAll().then(response => PaymentAssembler.toEntitiesFromResponse(response).filter(payment => payment.subscriptionId === subscriptionId));
     }
 }

@@ -2,7 +2,7 @@ import {BaseApi} from "../../shared/infrastructure/base-api.js";
 import {resourcesFromResponse} from "../../shared/infrastructure/base-assembler.js";
 import {CaseAssessment} from "../domain/model/entities/case-assessment.js";
 
-const caseAssessmentsEndpointPath = import.meta.env.VITE_CASE_ASSESSMENTS_ENDPOINT_PATH;
+const caseAssessmentsEndpointPath = import.meta.env.VITE_CASE_ASSESSMENTS_ENDPOINT_PATH || '/case-assessments';
 
 /**
  * Persistence contract for immutable case evaluations, separate from prescription issuance.

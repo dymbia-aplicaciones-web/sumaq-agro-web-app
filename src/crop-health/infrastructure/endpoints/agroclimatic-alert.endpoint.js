@@ -1,7 +1,7 @@
 import {BaseEndpoint} from "../../../shared/infrastructure/base-endpoint.js";
 import {AgroclimaticAlertAssembler} from "../assemblers/agroclimatic-alert.assembler.js";
 
-const agroclimaticAlertsEndpointPath = import.meta.env.VITE_AGROCLIMATIC_ALERTS_ENDPOINT_PATH;
+const agroclimaticAlertsEndpointPath = import.meta.env.VITE_AGROCLIMATIC_ALERTS_ENDPOINT_PATH || '/agroclimatic-alerts';
 
 /**
  * HTTP endpoint for managing agroclimatic alerts (`/agroclimatic-alerts`).

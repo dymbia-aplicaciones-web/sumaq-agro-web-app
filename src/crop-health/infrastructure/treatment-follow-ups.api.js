@@ -2,7 +2,7 @@ import {BaseApi} from "../../shared/infrastructure/base-api.js";
 import {resourcesFromResponse} from "../../shared/infrastructure/base-assembler.js";
 import {TreatmentFollowUp} from "../domain/model/entities/treatment-follow-up.js";
 
-const treatmentFollowUpsEndpointPath = import.meta.env.VITE_TREATMENT_FOLLOW_UPS_ENDPOINT_PATH;
+const treatmentFollowUpsEndpointPath = import.meta.env.VITE_TREATMENT_FOLLOW_UPS_ENDPOINT_PATH || '/treatment-follow-ups';
 
 /**
  * HTTP adapter for immutable farmer evidence, independently of the prescription itself.

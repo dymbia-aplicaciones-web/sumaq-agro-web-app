@@ -1,7 +1,7 @@
 import {installIamInterceptor} from '../../iam/infrastructure/iam.interceptor.js';
 import axios from "axios";
 
-const platformApi = import.meta.env.VITE_SUMAQAGRO_PLATFORM_API_URL;
+const platformApi = import.meta.env.VITE_SUMAQAGRO_PLATFORM_API_URL || '/api/v1';
 
 /**
  * Shared infrastructure base class that configures the HTTP client.

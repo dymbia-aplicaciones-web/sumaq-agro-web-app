@@ -1,7 +1,7 @@
 import {BaseEndpoint} from "../../../shared/infrastructure/base-endpoint.js";
 import {PlanAssembler} from "../assemblers/plan.assembler.js";
 
-const plansEndpointPath = import.meta.env.VITE_PLANS_ENDPOINT_PATH;
+const plansEndpointPath = "/plans";
 
 /**
  * HTTP endpoint for the plan catalog (`/plans`).

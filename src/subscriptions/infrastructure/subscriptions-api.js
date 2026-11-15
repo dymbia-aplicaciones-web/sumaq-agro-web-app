@@ -1,5 +1,3 @@
-import {Subscription} from '../domain/model/entities/subscription.entity.js';
-import {Payment} from '../domain/model/entities/payment.entity.js';
 import {PaymentStatus} from '../domain/model/entities/payment-status.js';
 import {BaseApi} from "../../shared/infrastructure/base-api.js";
 import {SubscriptionAssembler} from "./assemblers/subscription.assembler.js";
@@ -7,7 +5,6 @@ import {PaymentAssembler} from "./assemblers/payment.assembler.js";
 import {PlansApiEndpoint} from "./endpoints/plans.endpoint.js";
 import {SubscriptionsApiEndpoint} from "./endpoints/subscriptions.endpoint.js";
 import {PaymentsApiEndpoint} from "./endpoints/payments.endpoint.js";
-import {DEMO_COUPONS} from "./demo-coupons.js";
 import {buildReceiptPdf} from "./receipt-pdf.js";
 
 /**
@@ -48,24 +45,9 @@ export class SubscriptionsApi extends BaseApi {
         return this.#subscriptionsEndpoint.getByUser(userId);
     }
 
-    /**
-     * Creates a subscription.
-     * @param {import('../domain/model/entities/subscription.entity.js').Subscription} subscription - The subscription to create.
-     * @returns {Promise<import('../domain/model/entities/subscription.entity.js').Subscription>} The created subscription.
-     */
-    createSubscription(subscription) {
-        return this.#subscriptionsEndpoint.create(SubscriptionAssembler.toResourceFromEntity(subscription))
-            .then(response => SubscriptionAssembler.toEntityFromResource(response.data));
-    }
-
-    /**
-     * Saves the changes of a subscription (new plan, cancellation).
-     * @param {import('../domain/model/entities/subscription.entity.js').Subscription} subscription - The subscription to update.
-     * @returns {Promise<import('../domain/model/entities/subscription.entity.js').Subscription>} The updated subscription.
-     */
-    updateSubscription(subscription) {
-        return this.#subscriptionsEndpoint.update(subscription.id, SubscriptionAssembler.toResourceFromEntity(subscription))
-            .then(response => SubscriptionAssembler.toEntityFromResource(response.data));
+    async updateSubscription(subscription) {
+        const {data} = await this.http.post("/subscriptions/me/cancel");
+        return SubscriptionAssembler.toEntityFromResource({...data, userId: subscription.userId});
     }
 
     /**
@@ -77,38 +59,20 @@ export class SubscriptionsApi extends BaseApi {
         return this.#paymentsEndpoint.getBySubscription(subscriptionId);
     }
 
-    /**
-     * Registers a payment.
-     * @param {import('../domain/model/entities/payment.entity.js').Payment} payment - The payment to create.
-     * @returns {Promise<import('../domain/model/entities/payment.entity.js').Payment>} The created payment.
-     */
-    createPayment(payment) {
-        return this.#paymentsEndpoint.create(PaymentAssembler.toResourceFromEntity(payment))
-            .then(response => PaymentAssembler.toEntityFromResource(response.data));
+    async submitDemoPayment({userId, plan, status, cycle}) {
+        const {data} = await this.http.post("/subscriptions/me/checkout", {
+            planCode: plan.code,
+            billingCycle: cycle,
+            simulatedOutcome: status
+        });
+        return {
+            subscription: data.status === PaymentStatus.COMPLETED ? await this.getSubscriptionByUserId(userId) : null,
+            payment: PaymentAssembler.toEntityFromResource(data)
+        };
     }
 
-    async submitDemoPayment({ userId, plan, current, command, status, cycle }) {
-        const now = new Date();
-        const recordPayment = subscriptionId => this.createPayment(new Payment({
-            id: 0, subscriptionId, amount: command.amount, status,
-            transactionToken: `demo-tx-${crypto.randomUUID()}`, paidAt: now
-        }));
-        if (status === PaymentStatus.REJECTED) {
-            return { subscription: null, payment: current ? await recordPayment(current.id) : null };
-        }
-        const next = current?.copy() ?? Subscription.start({ userId, plan, billingCycle: cycle, startDate: now });
-        if (current) next.changePlan(plan, cycle, now);
-        const subscription = current ? await this.updateSubscription(next) : await this.createSubscription(next);
-        return { subscription, payment: await recordPayment(subscription.id) };
-    }
-
-    /**
-     * Checks a promotional code. Temporary: the RESTful API will validate the coupon.
-     * @param {string} couponCode - Code typed by the user.
-     * @returns {Promise<number|null>} Percentage discounted, or `null` if the code is not valid.
-     */
-    getCouponDiscount(couponCode) {
-        return Promise.resolve(DEMO_COUPONS[couponCode.trim().toUpperCase()] ?? null);
+    getCouponDiscount() {
+        return Promise.resolve(null);
     }
 
     /**

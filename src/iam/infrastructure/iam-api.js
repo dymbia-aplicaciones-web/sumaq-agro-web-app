@@ -6,19 +6,19 @@ export class IamApi extends BaseApi {
     async signIn(command) {
         const payload = AuthenticationAssembler.signIn(command);
         const data = mockAuthentication ? developmentSignIn(payload)
-            : (await this.http.post('/authentication/sign-in', payload)).data;
+            : (await this.http.post('/tokens', payload)).data;
         return AuthenticationAssembler.session(data);
     }
 
     async signUp(command) {
         const payload = AuthenticationAssembler.signUp(command);
         if (mockAuthentication) return developmentSignUp(payload);
-        return this.http.post('/authentication/sign-up', payload);
+        return this.http.post('/users', payload);
     }
 
     async requestPasswordReset(email) {
         if (mockAuthentication) return;
-        return this.http.post('/authentication/password-recovery', {email});
+        return this.http.post('/authentication/password-recovery/request', {email});
     }
 
     async resetPassword(token, newPassword) {

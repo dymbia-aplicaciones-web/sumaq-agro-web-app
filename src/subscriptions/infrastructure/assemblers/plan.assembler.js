@@ -22,12 +22,12 @@ export class PlanAssembler {
      */
     static toEntityFromResource(resource) {
         return new Plan({
-            id: Number(resource.id),
+            id: resource.id ?? resource.code,
             code: resource.code,
-            name: resource.name,
+            name: resource.name ?? resource.code,
             monthlyPrice: new Money(resource.monthlyPrice, resource.currency),
             annualPrice: new Money(resource.annualPrice, resource.currency),
-            plotQuota: resource.plotQuota,
+            plotQuota: resource.plotQuota ?? (resource.registeredPlotLimit || resource.supervisedPlotLimit),
             features: resource.features
         });
     }

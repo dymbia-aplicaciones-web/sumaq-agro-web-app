@@ -1,5 +1,5 @@
 export const mockAuthentication = import.meta.env.DEV &&
-    import.meta.env.VITE_MOCK_AUTHENTICATION !== 'false';
+    false;
 
 export const developmentAccounts = mockAuthentication ? [
     {id: 1, email: 'farmer@sumaqagro.test', role: 'FARMER', fullName: 'Guillermo'},

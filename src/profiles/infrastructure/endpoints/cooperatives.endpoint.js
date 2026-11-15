@@ -1,7 +1,7 @@
 import {BaseEndpoint} from "../../../shared/infrastructure/base-endpoint.js";
 import {CooperativeAssembler} from "../assemblers/cooperative.assembler.js";
 
-const cooperativesEndpointPath = import.meta.env.VITE_COOPERATIVES_ENDPOINT_PATH;
+const cooperativesEndpointPath = import.meta.env.VITE_COOPERATIVES_ENDPOINT_PATH || '/cooperatives';
 
 /**
  * HTTP endpoint for institutional cooperative data.
@@ -20,6 +20,6 @@ export class CooperativesApiEndpoint extends BaseEndpoint {
      * @returns {Promise<import('../../domain/model/entities/cooperative.entity.js').Cooperative|null>} Cooperative, or `null`.
      */
     getByDirector(userId) {
-        return this.getAllBy({ directorUserId: userId }).then(response => CooperativeAssembler.toEntitiesFromResponse(response)[0] ?? null);
+        return this.getAll().then(response => CooperativeAssembler.toEntitiesFromResponse(response).find(cooperative => cooperative.directorUserId === userId) ?? null);
     }
 }

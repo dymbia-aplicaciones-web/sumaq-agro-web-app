@@ -34,7 +34,7 @@ export class ProfilesApi extends BaseApi {
 
     async registerCooperative(directorUserId, { legalName, ruc, region }) {
         const { data } = await this.#cooperativesEndpoint.create({
-            directorUserId, legalName, ruc, region,
+            managerUserId: directorUserId, businessName: legalName, ruc, region,
             institutionalEmail: '', legalRepresentative: '',
             headquartersAddress: '', switchboardPhone: ''
         });

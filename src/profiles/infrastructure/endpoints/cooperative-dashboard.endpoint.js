@@ -2,7 +2,7 @@ import {BaseEndpoint} from "../../../shared/infrastructure/base-endpoint.js";
 import {resourcesFromResponse} from "../../../shared/infrastructure/base-assembler.js";
 import {CooperativeDashboardAssembler} from "../assemblers/cooperative-dashboard.assembler.js";
 
-const cooperativeDashboardsEndpointPath = import.meta.env.VITE_COOPERATIVE_DASHBOARDS_ENDPOINT_PATH;
+const cooperativeDashboardsEndpointPath = import.meta.env.VITE_COOPERATIVE_DASHBOARDS_ENDPOINT_PATH || '/cooperative-dashboards';
 
 /**
  * HTTP endpoint for the cooperative director dashboard projection.

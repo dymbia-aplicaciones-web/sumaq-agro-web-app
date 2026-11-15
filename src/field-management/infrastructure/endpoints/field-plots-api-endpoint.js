@@ -1,7 +1,7 @@
 import {BaseEndpoint} from "../../../shared/infrastructure/base-endpoint.js";
 import {FieldPlotAssembler} from "../assemblers/field-plot.assembler.js";
 
-const fieldPlotsEndpointPath = import.meta.env.VITE_FIELD_PLOTS_ENDPOINT_PATH;
+const fieldPlotsEndpointPath = import.meta.env.VITE_FIELD_PLOTS_ENDPOINT_PATH || '/field-plots';
 
 /**
  * HTTP endpoint for the field plots resource (`/field-plots`).
@@ -29,8 +29,13 @@ export class FieldPlotsApiEndpoint extends BaseEndpoint {
      * @param {number[]} ids - The IDs of the plots.
      * @returns {Promise<import('../../domain/model/entities/field-plot.entity.js').FieldPlot[]>} Plots found.
      */
-    getByIds(ids) {
-        return this.getAll().then(response =>
-            FieldPlotAssembler.toEntitiesFromResponse(response).filter(plot => ids.includes(plot.id)));
+    async getByIds(ids) {
+        const plots = await Promise.all([...new Set(ids)].map(async id => {
+            const response = await this.http.get(`${this.endpointPath}/${id}`, {
+                validateStatus: status => status === 200 || status === 404
+            });
+            return response.status === 200 ? FieldPlotAssembler.toEntityFromResource(response.data) : null;
+        }));
+        return plots.filter(Boolean);
     }
 }

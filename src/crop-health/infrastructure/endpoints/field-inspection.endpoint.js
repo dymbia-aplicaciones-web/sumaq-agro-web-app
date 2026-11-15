@@ -1,7 +1,7 @@
 import {BaseEndpoint} from "../../../shared/infrastructure/base-endpoint.js";
 import {FieldInspectionAssembler} from "../assemblers/field-inspection.assembler.js";
 
-const fieldInspectionsEndpointPath = import.meta.env.VITE_FIELD_INSPECTIONS_ENDPOINT_PATH;
+const fieldInspectionsEndpointPath = import.meta.env.VITE_FIELD_INSPECTIONS_ENDPOINT_PATH || '/field-inspections';
 
 /**
  * HTTP endpoint for managing scheduled field inspections (`/field-inspections`).

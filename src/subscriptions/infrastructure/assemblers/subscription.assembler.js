@@ -24,12 +24,12 @@ export class SubscriptionAssembler {
         return new Subscription({
             id: Number(resource.id),
             userId: resource.userId,
-            planId: resource.planId,
+            planId: resource.planId ?? resource.planCode,
             status: resource.status,
             billingCycle: resource.billingCycle,
             startDate: fromApiDate(resource.startDate),
             endDate: resource.endDate ? fromApiDate(resource.endDate) : null,
-            autoRenew: resource.autoRenew
+            autoRenew: resource.autoRenew ?? resource.status === "ACTIVE"
         });
     }
 
