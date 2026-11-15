@@ -1217,7 +1217,8 @@
       "title": "Planes",
       "subtitle": "Elige el plan que mejor se adapte a tu actividad.",
       "billing-cycle": "Frecuencia de pago",
-      "empty": "No hay planes disponibles en este momento."
+      "empty": "No hay planes disponibles en este momento.",
+      "access-check-failed": "No se pudo verificar el acceso de la suscripción. Inténtalo de nuevo."
     },
     "billing": {
       "title": "Suscripción y pagos",
@@ -1266,7 +1267,8 @@
       "view-billing": "Ver suscripción y pagos",
       "simulate-rejection": "Simular pago rechazado",
       "no-plan": "Primero elige un plan para continuar.",
-      "choose-plan": "Ver planes"
+      "choose-plan": "Ver planes",
+      "go-to-dashboard": "Ir a mi panel"
     },
     "errors": {
       "load-plans": "No se pudieron cargar los planes.",

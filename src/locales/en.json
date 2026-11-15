@@ -1217,7 +1217,8 @@
       "title": "Plans",
       "subtitle": "Choose the plan that best fits your work.",
       "billing-cycle": "Billing cycle",
-      "empty": "No plans are available right now."
+      "empty": "No plans are available right now.",
+      "access-check-failed": "Could not verify subscription access. Try again."
     },
     "billing": {
       "title": "Subscription and payments",
@@ -1266,7 +1267,8 @@
       "view-billing": "View subscription and payments",
       "simulate-rejection": "Simulate rejected payment",
       "no-plan": "Choose a plan before continuing.",
-      "choose-plan": "Browse plans"
+      "choose-plan": "Browse plans",
+      "go-to-dashboard": "Go to my dashboard"
     },
     "errors": {
       "load-plans": "The plans could not be loaded.",
