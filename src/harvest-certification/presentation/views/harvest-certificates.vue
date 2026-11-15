@@ -87,7 +87,8 @@ const toggleFarmerQr = id => visibleQr.value = visibleQr.value === id ? null : i
 /** Opens the evaluation dialog with an empty form. */
 const openNew = () => {
   if (!store.canIssue) return;
-  form.value = emptyForm();
+  const member = store.members.find(item => item.plots.length);
+  form.value = { ...emptyForm(), memberId: member?.id ?? null, plotId: member?.plots[0]?.id ?? null };
   formError.value = null;
   busy.value = false;
   selectedBatch.value = null;
@@ -312,7 +313,7 @@ watch(() => iamStore.currentUser, () => {
         </div>
       </div>
 
-      <pv-dialog v-model:visible="dialogVisible" :closable="!busy" :close-on-escape="!busy" modal class="evaluation-dialog" :style="{ width: '740px', maxWidth: 'calc(100vw - 30px)' }">
+      <pv-dialog v-model:visible="dialogVisible" :closable="!busy" :close-on-escape="!busy" modal class="evaluation-dialog" :style="{ width: '820px', maxWidth: 'calc(100vw - 30px)' }">
         <template #header>
           <div>
             <h2 class="dialog-title">{{ t('harvest-certification.modal.title') }}</h2>
@@ -336,7 +337,7 @@ watch(() => iamStore.currentUser, () => {
 
         <pv-message v-if="dialog === 'preview' && store.error" severity="error">{{ t(store.error) }}</pv-message>
         <template #footer>
-          <div class="flex justify-content-between w-full">
+          <div class="flex justify-content-end gap-3 w-full">
             <template v-if="dialog === 'form'">
               <pv-button outlined severity="secondary" :label="t('common.cancel')" @click="dialog = 'closed'"/>
               <pv-button class="primary-action" :label="t('harvest-certification.modal.review')" @click="preview"/>
@@ -637,4 +638,13 @@ h1 {
     padding: 0;
   }
 }
+</style>
+
+<style>
+.evaluation-dialog.p-dialog { border-radius: 18px; overflow: hidden; }
+.evaluation-dialog .p-dialog-header, .evaluation-dialog .p-dialog-footer { background: #f3f5f0; padding: 16px 24px; }
+.evaluation-dialog .p-dialog-header { border-bottom: 1px solid #c4cec2; }
+.evaluation-dialog .p-dialog-footer { border-top: 1px solid #c4cec2; }
+.evaluation-dialog .p-dialog-content { padding: 24px; }
+.evaluation-dialog .p-dialog-footer .p-button { border-radius: 999px; }
 </style>
