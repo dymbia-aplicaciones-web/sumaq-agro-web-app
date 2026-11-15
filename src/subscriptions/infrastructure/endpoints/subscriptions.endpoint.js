@@ -1,7 +1,7 @@
 import {BaseEndpoint} from "../../../shared/infrastructure/base-endpoint.js";
 import {SubscriptionAssembler} from "../assemblers/subscription.assembler.js";
 
-const subscriptionsEndpointPath = import.meta.env.VITE_SUBSCRIPTIONS_ENDPOINT_PATH;
+const subscriptionsEndpointPath = "/subscriptions/me";
 
 /**
  * HTTP endpoint for the subscriptions resource (`/subscriptions`).
@@ -13,6 +13,7 @@ export class SubscriptionsApiEndpoint extends BaseEndpoint {
     /** @param {import('../../../shared/infrastructure/base-api.js').BaseApi} baseApi - Configured API client owner. */
     constructor(baseApi) {
         super(baseApi, subscriptionsEndpointPath);
+        this.http = baseApi.http;
     }
 
     /**
@@ -22,6 +23,6 @@ export class SubscriptionsApiEndpoint extends BaseEndpoint {
      * The subscription, or `null` if the user has none yet.
      */
     getByUser(userId) {
-        return this.getAllBy({ userId }).then(response => SubscriptionAssembler.toEntitiesFromResponse(response)[0] ?? null);
+        return this.http.get(subscriptionsEndpointPath).then(response => response.status === 204 ? null : SubscriptionAssembler.toEntityFromResource({...response.data, userId}));
     }
 }

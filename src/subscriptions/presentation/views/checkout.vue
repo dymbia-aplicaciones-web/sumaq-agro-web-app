@@ -8,7 +8,6 @@ import {SubmitPaymentCommand} from "../../domain/model/commands/submit-payment.c
 import {PaymentStatus} from "../../domain/model/entities/payment-status.js";
 import PageHeader from "../../../shared/presentation/components/page-header.vue";
 import MessageCard from "../../../shared/presentation/components/message-card.vue";
-import CouponForm from "../components/coupon-form.vue";
 
 /** Checkout summary and demo payment flow for a selected plan (Angular `CheckoutView`). */
 const { t } = useI18n();
@@ -107,7 +106,6 @@ const onReturnToCatalog = () => {
 
       <section class="payment-panel">
         <h2>{{ t('subscriptions.checkout.payment-title') }}</h2>
-        <coupon-form :disabled="store.processing" @apply="onApplyCoupon"/>
 
         <pv-card class="sa-card">
           <template #content>

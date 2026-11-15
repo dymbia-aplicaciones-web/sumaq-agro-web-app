@@ -22,12 +22,12 @@ export class PaymentAssembler {
      */
     static toEntityFromResource(resource) {
         return new Payment({
-            id: Number(resource.id),
+            id: resource.id ?? resource.reference,
             subscriptionId: resource.subscriptionId,
             amount: new Money(resource.amount, resource.currency),
-            transactionToken: resource.transactionToken,
+            transactionToken: resource.transactionToken ?? resource.reference,
             status: resource.status,
-            paidAt: new Date(resource.paidAt)
+            paidAt: new Date(resource.paidAt ?? resource.attemptedAt)
         });
     }
 
