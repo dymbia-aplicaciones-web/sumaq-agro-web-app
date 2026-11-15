@@ -160,6 +160,7 @@ const onConfirmRemove = () => {
   max-width: 1160px;
   margin: 0 auto;
   width: 100%;
+  gap: 24px;
 }
 
 .breadcrumb {
@@ -244,7 +245,11 @@ h2 {
   border-radius: 10px;
 }
 
+.settings-card :deep(.p-card-body) { padding: clamp(16px, 3vw, 32px); }
+.advisor-table { margin-top: 32px; overflow: hidden; border: 1px solid #dbe3ed; border-radius: 12px; }
+.advisor-table :deep(tbody td) { padding: 16px 20px; }
 .advisor-table :deep(thead th) {
+  padding: 16px 20px;
   background: #006152;
   color: #fff;
 }
