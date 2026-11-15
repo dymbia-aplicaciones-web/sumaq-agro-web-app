@@ -1,6 +1,6 @@
 const publicAuthentication = new Set([
-    '/authentication/sign-in', '/authentication/sign-up',
-    '/authentication/password-recovery', '/authentication/password-recovery/reset'
+    '/tokens', '/users', '/authentication/password-recovery/request',
+    '/authentication/password-recovery/reset', '/public/traceability'
 ]);
 
 let readSession = () => null;

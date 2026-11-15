@@ -31,7 +31,7 @@ const routes = [
         path: '/',
         component: layout,
         children: [
-            { path: '',                       name: 'home',                   redirect: { name: 'iam-sign-in' } },
+            { path: '',                       name: 'home',                   redirect: () => useIamStore().currentUser?.initialRoute ?? { name: 'iam-sign-in' } },
             { path: 'field-management',       children: fieldManagementRoutes, meta: { requiresActiveSubscription: true } },
             { path: 'crop-health',            children: cropHealthRoutes, meta: { requiresActiveSubscription: true } },
             { path: 'profiles',               children: profilesRoutes, meta: { requiresActiveSubscription: true } },
@@ -56,7 +56,7 @@ const router = createRouter({
  * @returns {{name: string}|boolean|undefined} - Returns true to allow navigation or an object to redirect.
  */
 let watchingSession = false;
-router.beforeEach((to, from) => {
+router.beforeEach(to => {
     if (!watchingSession) {
         watchingSession = true;
         const iam = useIamStore();
@@ -66,15 +66,26 @@ router.beforeEach((to, from) => {
                 void router.replace({name: 'iam-sign-in', query: {returnUrl: current.fullPath}});
         });
     }
-    console.log(`Navigating from ${String(from.name)} to ${String(to.name)}`);
-    const authentication = authenticationGuard(to, from);
+    const authentication = authenticationGuard(to);
     return authentication === true ? activeSubscriptionGuard(to) : authentication;
 });
 
 /**
  * Sets the page title from `meta.title` (an i18n key) in the active language.
  */
-router.afterEach((to) => {
+const routeRecoveryKey = 'sumaqagro.route-recovery';
+
+router.onError((error, to) => {
+    const failedImport = /failed to fetch dynamically imported module|error loading dynamically imported module|importing a module script failed|unable to preload css/i.test(error.message);
+    if (!failedImport || !navigator.onLine || sessionStorage.getItem(routeRecoveryKey) === to.fullPath) return;
+
+    sessionStorage.setItem(routeRecoveryKey, to.fullPath);
+    window.location.replace(router.resolve(to.fullPath).href);
+});
+
+router.afterEach((to, _, failure) => {
+    if (!failure && sessionStorage.getItem(routeRecoveryKey) === to.fullPath)
+        sessionStorage.removeItem(routeRecoveryKey);
     let baseTitle = 'SumaqAgro';
     const title = to.meta['title'];
     document.title = title ? `${i18n.global.t(title)} – ${baseTitle}` : baseTitle;
