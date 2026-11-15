@@ -21,18 +21,22 @@ export function netWeightKg(evaluation) {
  */
 export function validateEvaluation(evaluation) {
     const net = netWeightKg(evaluation);
-    if (evaluation.grossKg <= 0 || evaluation.tareKg < 0 || net <= 0) {
+    if (!Number.isFinite(evaluation.grossKg) || !Number.isFinite(evaluation.tareKg) ||
+        evaluation.grossKg <= 0 || evaluation.tareKg < 0 || net <= 0) {
         return { key: 'harvest-certification.errors.gross-weight', params: { gross: evaluation.grossKg, tare: evaluation.tareKg } };
     }
-    if (evaluation.sampleKg <= 0 || evaluation.sampleKg > net) {
+    if (!Number.isFinite(evaluation.sampleKg) || evaluation.sampleKg <= 0 || evaluation.sampleKg > net) {
         return { key: 'harvest-certification.errors.sample-weight', params: { net } };
     }
     if (evaluation.cropType === HarvestCropType.ANDEAN_POTATO) {
         const total = evaluation.firstPercentage + evaluation.secondPercentage + evaluation.thirdPercentage;
-        if (Math.abs(total - 100) > 0.01 || evaluation.weevilDamagePercentage < 0 || evaluation.weevilDamagePercentage > 100) {
+        const percentages = [evaluation.firstPercentage, evaluation.secondPercentage,
+            evaluation.thirdPercentage, evaluation.weevilDamagePercentage];
+        if (percentages.some(value => !Number.isFinite(value) || value < 0 || value > 100) ||
+            Math.abs(total - 100) > 0.01) {
             return { key: 'harvest-certification.errors.potato-grading' };
         }
-    } else if (evaluation.scaScore < 0 || evaluation.scaScore > 100) {
+    } else if (!Number.isFinite(evaluation.scaScore) || evaluation.scaScore < 0 || evaluation.scaScore > 100) {
         return { key: 'harvest-certification.errors.sca-score' };
     }
     return null;
