@@ -1,7 +1,7 @@
 import {BaseEndpoint} from "../../../shared/infrastructure/base-endpoint.js";
 import {CooperativeMemberAssembler} from "../assemblers/cooperative-member.assembler.js";
 
-const cooperativeMembersEndpointPath = import.meta.env.VITE_COOPERATIVE_MEMBERS_ENDPOINT_PATH;
+const cooperativeMembersEndpointPath = import.meta.env.VITE_COOPERATIVE_MEMBERS_ENDPOINT_PATH || '/cooperative-members';
 
 /**
  * HTTP endpoint for the cooperative member directory.
@@ -20,7 +20,13 @@ export class CooperativeMembersApiEndpoint extends BaseEndpoint {
      * @returns {Promise<import('../../domain/model/entities/cooperative-member.entity.js').CooperativeMember[]>} Members.
      */
     async add(cooperativeId, details) {
-        const { data } = await this.create({ ...details, cooperativeId, active: true, plots: [] });
+        const { fullName, ...resource } = details;
+        const [firstName, ...lastNames] = (fullName ?? '').trim().split(/\s+/);
+        const { data } = await this.http.post(`/cooperatives/${cooperativeId}/members`, {
+            ...resource,
+            firstName: resource.firstName ?? firstName,
+            lastName: resource.lastName ?? lastNames.join(' ')
+        });
         return CooperativeMemberAssembler.toEntityFromResource(data);
     }
 

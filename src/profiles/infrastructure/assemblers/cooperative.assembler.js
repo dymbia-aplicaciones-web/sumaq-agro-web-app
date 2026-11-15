@@ -12,7 +12,7 @@ export class CooperativeAssembler {
      * @returns {Cooperative} Cooperative entity.
      */
     static toEntityFromResource(resource) {
-        return new Cooperative({ ...resource, id: Number(resource.id) });
+        return new Cooperative({ ...resource, id: Number(resource.id), directorUserId: resource.managerUserId ?? resource.directorUserId, legalName: resource.businessName ?? resource.legalName });
     }
 
     /**
@@ -22,8 +22,8 @@ export class CooperativeAssembler {
     static toResourceFromEntity(entity) {
         return {
             id: entity.id,
-            directorUserId: entity.directorUserId,
-            legalName: entity.legalName,
+            managerUserId: entity.directorUserId,
+            businessName: entity.legalName,
             region: entity.region,
             institutionalEmail: entity.institutionalEmail,
             legalRepresentative: entity.legalRepresentative,

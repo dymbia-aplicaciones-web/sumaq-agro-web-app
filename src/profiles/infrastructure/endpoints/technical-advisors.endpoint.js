@@ -1,7 +1,7 @@
 import {BaseEndpoint} from "../../../shared/infrastructure/base-endpoint.js";
 import {TechnicalAdvisorAssembler} from "../assemblers/technical-advisor.assembler.js";
 
-const agronomistAssignmentsEndpointPath = import.meta.env.VITE_AGRONOMIST_ASSIGNMENTS_ENDPOINT_PATH;
+const agronomistAssignmentsEndpointPath = import.meta.env.VITE_AGRONOMIST_ASSIGNMENTS_ENDPOINT_PATH || '/agronomist-assignments';
 
 /**
  * HTTP endpoint for technical advisor assignments.

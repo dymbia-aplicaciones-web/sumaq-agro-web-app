@@ -1,7 +1,7 @@
 import {BaseEndpoint} from "../../../shared/infrastructure/base-endpoint.js";
 import {FarmerProfileAssembler} from "../assemblers/farmer-profile.assembler.js";
 
-const profilesEndpointPath = import.meta.env.VITE_PROFILES_ENDPOINT_PATH;
+const profilesEndpointPath = import.meta.env.VITE_PROFILES_ENDPOINT_PATH || '/profiles';
 
 /**
  * HTTP endpoint for the farmer Profiles resource.

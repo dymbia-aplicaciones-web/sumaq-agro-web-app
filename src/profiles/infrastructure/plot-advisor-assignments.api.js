@@ -1,7 +1,7 @@
 import {BaseApi} from "../../shared/infrastructure/base-api.js";
 import {resourcesFromResponse} from "../../shared/infrastructure/base-assembler.js";
 
-const plotAdvisorAssignmentsEndpointPath = import.meta.env.VITE_PLOT_ADVISOR_ASSIGNMENTS_ENDPOINT_PATH;
+const plotAdvisorAssignmentsEndpointPath = import.meta.env.VITE_PLOT_ADVISOR_ASSIGNMENTS_ENDPOINT_PATH || '/plot-advisor-assignments';
 
 /** @typedef {import('../domain/model/entities/plot-advisor-assignment.js').PlotAdvisorAssignment} PlotAdvisorAssignment */
 
