@@ -1,14 +1,38 @@
 <script setup>
-import {ref} from "vue";
+import {ref, watch} from "vue";
 import {useI18n} from "vue-i18n";
+import {useRouter} from "vue-router";
+import useCropHealthStore from "../../../crop-health/application/crop-health.store.js";
 import AuthenticationSection from "../../../iam/presentation/components/authentication-section.vue";
 import useLayoutStore from "../../application/layout.store.js";
 
 const { t } = useI18n();
 const layoutStore = useLayoutStore();
+const router = useRouter();
+const crop = useCropHealthStore();
 const search = ref('');
-/** Pending notifications. Connected to the agroclimatic alerts later (Angular `Toolbar`). */
-const notificationCount = ref(0);
+const suggestions = ref([]);
+
+const normalize = value => value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+function findPlots({query}) {
+  const term = normalize(query.trim());
+  suggestions.value = term ? crop.plots.filter(plot => normalize(plot.name).includes(term))
+      .sort((a, b) => Number(normalize(b.name) === term) - Number(normalize(a.name) === term) ||
+          a.name.localeCompare(b.name)).slice(0, 8) : [];
+}
+
+watch(() => crop.plots, () => {
+  findPlots({query: typeof search.value === 'string' ? search.value : ''});
+});
+
+function openPlot({value}) {
+  search.value = '';
+  suggestions.value = [];
+  if (!crop.plots.some(plot => plot.id === value.id)) return;
+  crop.selectPlot(value.id);
+  layoutStore.closeSidebarOnHandset();
+  void router.push({name: 'crop-health-monitoring'});
+}
 </script>
 
 <template>
@@ -22,7 +46,12 @@ const notificationCount = ref(0);
 
     <pv-icon-field class="search">
       <pv-input-icon class="pi pi-search"/>
-      <pv-input-text v-model="search" type="search" fluid :placeholder="t('layout.search')" :aria-label="t('layout.search')"/>
+      <pv-auto-complete v-model="search" :suggestions="suggestions" option-label="name" fluid
+                        :placeholder="t('layout.search')" :aria-label="t('layout.search')"
+                        :empty-search-message="t(crop.scopeLoading ? 'common.loading' : 'layout.no-plot-matches')"
+                        @complete="findPlots" @option-select="openPlot">
+        <template #option="{option}">{{ option.name }} · {{ option.region }}</template>
+      </pv-auto-complete>
     </pv-icon-field>
 
     <span class="flex-auto"/>
@@ -31,14 +60,6 @@ const notificationCount = ref(0);
       <i :class="layoutStore.isOnline ? 'pi pi-cloud' : 'pi pi-ban'" aria-hidden="true"/>
       {{ t(layoutStore.isOnline ? 'layout.connected' : 'layout.disconnected') }}
     </span>
-
-    <pv-button
-        v-tooltip.bottom="t('layout.notifications')"
-        :badge="notificationCount > 0 ? String(notificationCount) : undefined"
-        badge-severity="danger"
-        icon="pi pi-bell"
-        text rounded severity="secondary"
-        :aria-label="t('layout.notifications')"/>
 
     <authentication-section/>
   </header>
