@@ -237,4 +237,9 @@ const downloadImage = async () => {
     min-height: 360px;
   }
 }
+.content-grid { align-items: start; }
+.map-card { padding: clamp(0px, 1.5vw, 24px); }
+.content-grid :deep(.p-card-title) { font-size: 1.35rem; font-weight: 500; }
+.content-grid :deep(.p-card) { background: var(--sa-surface-container-low); }
+.content-grid :deep(.p-card-content .p-button) { align-self: center; width: auto !important; }
 </style>
