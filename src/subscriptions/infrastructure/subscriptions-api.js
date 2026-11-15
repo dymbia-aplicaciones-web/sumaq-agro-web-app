@@ -1,3 +1,6 @@
+import {Subscription} from '../domain/model/entities/subscription.entity.js';
+import {Payment} from '../domain/model/entities/payment.entity.js';
+import {PaymentStatus} from '../domain/model/entities/payment-status.js';
 import {BaseApi} from "../../shared/infrastructure/base-api.js";
 import {SubscriptionAssembler} from "./assemblers/subscription.assembler.js";
 import {PaymentAssembler} from "./assemblers/payment.assembler.js";
@@ -82,6 +85,21 @@ export class SubscriptionsApi extends BaseApi {
     createPayment(payment) {
         return this.#paymentsEndpoint.create(PaymentAssembler.toResourceFromEntity(payment))
             .then(response => PaymentAssembler.toEntityFromResource(response.data));
+    }
+
+    async submitDemoPayment({ userId, plan, current, command, status, cycle }) {
+        const now = new Date();
+        const recordPayment = subscriptionId => this.createPayment(new Payment({
+            id: 0, subscriptionId, amount: command.amount, status,
+            transactionToken: `demo-tx-${crypto.randomUUID()}`, paidAt: now
+        }));
+        if (status === PaymentStatus.REJECTED) {
+            return { subscription: null, payment: current ? await recordPayment(current.id) : null };
+        }
+        const next = current?.copy() ?? Subscription.start({ userId, plan, billingCycle: cycle, startDate: now });
+        if (current) next.changePlan(plan, cycle, now);
+        const subscription = current ? await this.updateSubscription(next) : await this.createSubscription(next);
+        return { subscription, payment: await recordPayment(subscription.id) };
     }
 
     /**

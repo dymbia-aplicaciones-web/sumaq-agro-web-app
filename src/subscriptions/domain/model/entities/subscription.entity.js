@@ -94,8 +94,9 @@ export class Subscription {
      * @returns {boolean} `true` when the user can still use the plan: active, or cancelled but not yet expired.
      */
     hasAccess(today = new Date()) {
-        if (this.isActive()) return true;
-        return this.endDate !== null && this.endDate >= startOfDay(today);
+        const day = startOfDay(today);
+        return (this.status === SubscriptionStatus.ACTIVE || this.status === SubscriptionStatus.CANCELLED) &&
+            this.endDate !== null && startOfDay(this.startDate) <= day && day <= startOfDay(this.endDate);
     }
 
     /**
@@ -103,7 +104,7 @@ export class Subscription {
      * @returns {boolean} `true` when a cancelled plan reached its end date, so the user is left without plan.
      */
     isExpired(today = new Date()) {
-        return this.status === SubscriptionStatus.CANCELLED && this.endDate !== null && this.endDate < startOfDay(today);
+        return this.endDate !== null && startOfDay(this.endDate) < startOfDay(today);
     }
 
     /**
