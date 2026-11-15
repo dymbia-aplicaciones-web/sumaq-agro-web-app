@@ -1,3 +1,5 @@
+import {watch} from "vue";
+import useIamStore from "./iam/application/iam.store.js";
 import {createRouter, createWebHistory} from "vue-router";
 import i18n from "./i18n.js";
 import iamRoutes from "./iam/presentation/iam-routes.js";
@@ -20,15 +22,16 @@ const forbidden = () => import('./shared/presentation/views/forbidden.vue');
  * the private pages are children of the layout (side menu and top bar).
  */
 const routes = [
-    { path: '/iam',             children: iamRoutes },
+    ...iamRoutes,
+    { path: '/iam/demo-access', redirect: { name: 'iam-sign-in' } },
     { path: '/subscriptions',   children: subscriptionsRoutes },
     { path: '/verify',          children: publicTraceabilityRoutes },
-    { path: '/demo-access',     redirect: { name: 'iam-demo-access' } },
+    { path: '/demo-access',     redirect: { name: 'iam-sign-in' } },
     {
         path: '/',
         component: layout,
         children: [
-            { path: '',                       name: 'home',                   redirect: { name: 'iam-demo-access' } },
+            { path: '',                       name: 'home',                   redirect: { name: 'iam-sign-in' } },
             { path: 'field-management',       children: fieldManagementRoutes, meta: { requiresActiveSubscription: true } },
             { path: 'crop-health',            children: cropHealthRoutes, meta: { requiresActiveSubscription: true } },
             { path: 'profiles',               children: profilesRoutes, meta: { requiresActiveSubscription: true } },
@@ -52,7 +55,17 @@ const router = createRouter({
  * @param {import('vue-router').RouteLocationNormalized} from - Previous route.
  * @returns {{name: string}|boolean|undefined} - Returns true to allow navigation or an object to redirect.
  */
+let watchingSession = false;
 router.beforeEach((to, from) => {
+    if (!watchingSession) {
+        watchingSession = true;
+        const iam = useIamStore();
+        watch(() => iam.isSignedIn, signedIn => {
+            const current = router.currentRoute.value;
+            if (!signedIn && !current.meta.public && current.name !== 'public-traceability')
+                void router.replace({name: 'iam-sign-in', query: {returnUrl: current.fullPath}});
+        });
+    }
     console.log(`Navigating from ${String(from.name)} to ${String(to.name)}`);
     const authentication = authenticationGuard(to, from);
     return authentication === true ? activeSubscriptionGuard(to) : authentication;

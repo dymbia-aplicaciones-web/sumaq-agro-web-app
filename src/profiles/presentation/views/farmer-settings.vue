@@ -205,7 +205,7 @@ const saveContact = () => {
               <h2>{{ t('profiles.settings.security-title') }}</h2>
               <p class="sa-muted">{{ t('profiles.settings.security-description') }}</p>
               <p class="notice">{{ t('profiles.settings.preview') }}</p>
-              <div><pv-button outlined icon="pi pi-lock" :label="t('profiles.settings.change-password')" disabled/></div>
+              <div><pv-button outlined icon="pi pi-lock" :label="t('profiles.settings.change-password')" @click="$router.push({name: 'iam-forgot-password'})"/></div>
               <div class="preferences">
                 <h2>{{ t('profiles.settings.preferences') }}</h2>
                 <div class="sa-field">
