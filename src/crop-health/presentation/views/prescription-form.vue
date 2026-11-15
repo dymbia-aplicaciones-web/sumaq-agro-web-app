@@ -1,5 +1,5 @@
 <script setup>
-import {ref, watch} from "vue";
+import {computed, ref, watch} from "vue";
 import {useI18n} from "vue-i18n";
 import {useRoute, useRouter} from "vue-router";
 import useCropHealthStore from "../../application/crop-health.store.js";
@@ -14,7 +14,10 @@ const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 
-const caseId = Number(route.query['reportId']) || 0;
+const caseId = computed(() => {
+  const id = Number(route.params.reportId ?? route.query.reportId);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+});
 const emptyForm = (reportId = null) => ({ reportId, agrochemical: '', dosage: '', instructions: '', applicationDate: null });
 const form = ref(emptyForm());
 const submitted = ref(false);
@@ -22,14 +25,14 @@ const saved = ref(false);
 const formDisabled = ref(false);
 const missing = field => submitted.value && !String(form.value[field] ?? '').trim();
 
-watch(() => store.scopeReady, ready => {
+watch([() => store.scopeReady, caseId], ([ready]) => {
   saved.value = false;
   if (!ready) return;
   store.loadClinicalData(() => {
     formDisabled.value = false;
     form.value = emptyForm();
     submitted.value = false;
-    if (store.treatableReports.some(report => report.id === caseId)) form.value.reportId = caseId;
+    if (store.treatableReports.some(report => report.id === caseId.value)) form.value.reportId = caseId.value;
   });
 }, { immediate: true });
 
