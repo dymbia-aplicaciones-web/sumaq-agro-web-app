@@ -1,7 +1,8 @@
 <script setup>
-import {ref} from "vue";
+import {computed, ref} from "vue";
 import {useI18n} from "vue-i18n";
 import {useRouter} from "vue-router";
+import {settingsRouteFor} from "../../../shared/presentation/components/navigation-config.js";
 import useIamStore from "../../application/iam.store.js";
 
 const { t } = useI18n();
@@ -9,11 +10,13 @@ const router = useRouter();
 const store = useIamStore();
 const menu = ref();
 
-const items = [
-  { label: 'layout.profile', icon: 'pi pi-user', command: () => router.push('/profiles/settings') },
-  { separator: true },
+const items = computed(() => {
+  const settings = settingsRouteFor(store.currentRole);
+  return [
+  ...(settings ? [{ label: 'layout.profile', icon: 'pi pi-user', command: () => router.push(settings) }, { separator: true }] : []),
   { label: 'layout.sign-out', icon: 'pi pi-sign-out', command: () => store.signOut(router) }
-];
+  ];
+});
 
 /**
  * Opens or closes the user menu.

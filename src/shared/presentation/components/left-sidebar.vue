@@ -1,20 +1,22 @@
 <script setup>
 import {computed} from "vue";
 import {useI18n} from "vue-i18n";
-import {useRouter} from "vue-router";
+import {useRoute, useRouter} from "vue-router";
 import LanguageSwitcher from "./language-switcher.vue";
-import {navigationFor} from "./navigation-config.js";
+import {activeNavigationLink, navigationFor} from "./navigation-config.js";
 import useIamStore from "../../../iam/application/iam.store.js";
 import useLayoutStore from "../../application/layout.store.js";
 import logo from "../../../assets/logo-sumaqagro.png";
 
 const { t } = useI18n();
 const router = useRouter();
+const route = useRoute();
 const iamStore = useIamStore();
 const layoutStore = useLayoutStore();
 
 /** Side menu generated from the selected user's experience. */
 const sections = computed(() => iamStore.currentRole ? navigationFor(iamStore.currentRole) : []);
+const activeLink = computed(() => iamStore.currentRole ? activeNavigationLink(iamStore.currentRole, route.path) : null);
 </script>
 
 <template>
@@ -35,7 +37,8 @@ const sections = computed(() => iamStore.currentRole ? navigationFor(iamStore.cu
             :key="option.link"
             :to="option.link"
             class="menu-item"
-            active-class="menu-item--active"
+            :class="{ 'menu-item--active': activeLink === option.link }"
+            :aria-current="activeLink === option.link ? 'page' : undefined"
             @click="layoutStore.closeSidebarOnHandset()">
           <i :class="option.icon" aria-hidden="true"/>
           <span>{{ t(option.label) }}</span>

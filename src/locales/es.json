@@ -30,7 +30,7 @@
     "assigned-plots": "Parcelas asignadas"
   },
   "layout": {
-    "search": "Buscar en mi parcela...",
+    "search": "Buscar parcela…",
     "menu": "Abrir menú",
     "connection": "Estado de conexión",
     "connected": "Conectado",
@@ -38,7 +38,8 @@
     "notifications": "Notificaciones",
     "profile": "Mi perfil",
     "sign-out": "Cerrar sesión",
-    "offline-mode": "Modo OFFLINE"
+    "offline-mode": "Modo OFFLINE",
+    "no-plot-matches": "No se encontraron parcelas"
   },
   "language": {
     "label": "Idioma",

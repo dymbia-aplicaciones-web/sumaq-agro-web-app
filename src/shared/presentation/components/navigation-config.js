@@ -7,7 +7,11 @@
 export const farmerNavigationSections = [
     {
         title: 'section.major',
-        options: [{ link: '/field-management/dashboard', label: 'option.my-plot', icon: 'pi pi-home' }]
+        options: [
+            { link: '/field-management/dashboard', label: 'option.my-plot', icon: 'pi pi-home' },
+            { link: '/field-management/plots', label: 'field-management.plots.manage', icon: 'pi pi-th-large' },
+            { link: '/field-management/campaigns', label: 'field-management.campaigns.title', icon: 'pi pi-calendar' }
+        ]
     },
     {
         title: 'section.agricultural-operation',
@@ -22,7 +26,7 @@ export const farmerNavigationSections = [
         title: 'section.system',
         options: [
             { link: '/crop-health/alerts', label: 'option.alerts', icon: 'pi pi-bell' },
-            { link: '/subscriptions/billing', label: 'subscriptions.nav-title', icon: 'pi pi-credit-card' },
+            { link: '/subscriptions', label: 'subscriptions.nav-title', icon: 'pi pi-credit-card' },
             { link: '/profiles/settings', label: 'option.settings', icon: 'pi pi-cog' }
         ]
     }
@@ -34,10 +38,8 @@ export const cooperativeDirectorNavigationSections = [
         title: 'section.institutional-management',
         options: [
             { link: '/profiles/cooperative/dashboard', label: 'option.cooperative-dashboard', icon: 'pi pi-home' },
-            // Not implemented in Angular either: it opens the page not found.
             { link: '/profiles/cooperative/members', label: 'option.member-directory', icon: 'pi pi-users' },
             { link: '/crop-health/monitoring', label: 'option.cooperative-plot-health', icon: 'pi pi-file' },
-            { link: '/field-management/finances', label: 'option.cooperative-costs', icon: 'pi pi-calendar' },
             { link: '/harvest-certification/certificates', label: 'option.cooperative-certificates', icon: 'pi pi-calendar' },
             { link: '/crop-health/alerts', label: 'option.cooperative-alerts', icon: 'pi pi-calendar' },
             { link: '/crop-health/inbox', label: 'option.diagnosis-inbox', icon: 'pi pi-inbox' }
@@ -46,7 +48,7 @@ export const cooperativeDirectorNavigationSections = [
     {
         title: 'section.system',
         options: [
-            { link: '/subscriptions/billing', label: 'subscriptions.nav-title', icon: 'pi pi-credit-card' },
+            { link: '/subscriptions', label: 'subscriptions.nav-title', icon: 'pi pi-credit-card' },
             { link: '/profiles/cooperative/settings', label: 'option.cooperative-settings', icon: 'pi pi-cog' }
         ]
     }
@@ -67,16 +69,35 @@ export const agronomistNavigationSections = [
     },
     {
         title: 'section.system',
-        options: [{ link: '/subscriptions/billing', label: 'subscriptions.nav-title', icon: 'pi pi-credit-card' }]
+        options: [{ link: '/subscriptions', label: 'subscriptions.nav-title', icon: 'pi pi-credit-card' }]
     }
 ];
 
 /**
- * Returns only the navigation options supported by the selected demo role.
+ * Returns only the navigation options supported by the active role.
  * @param {string} experience - Role of the user.
  * @returns {Array<Object>} Sections of the side menu.
  */
 export function navigationFor(experience) {
     if (experience === 'AGRONOMIST') return agronomistNavigationSections;
     return experience === 'COOPERATIVE_DIRECTOR' ? cooperativeDirectorNavigationSections : farmerNavigationSections;
+}
+
+
+export function activeNavigationLink(role, path) {
+    const options = navigationFor(role).flatMap(section => section.options);
+    const exact = options.find(option => option.link === path);
+    if (exact) return exact.link;
+    const casePage = /^\/crop-health\/(?:reports|pest-reports|prescribe|report-pest)(?:\/|$)/.test(path);
+    const clinicalPage = casePage || /^\/crop-health\/(?:inspections|prescriptions)(?:\/|$)/.test(path);
+    if (role === 'FARMER' && (clinicalPage || path === '/crop-health/inbox')) return '/crop-health/advisor';
+    if (casePage || (role === 'COOPERATIVE_DIRECTOR' && clinicalPage)) return '/crop-health/inbox';
+
+    return options.filter(option => path.startsWith(option.link + '/'))
+        .sort((a, b) => b.link.length - a.link.length)[0]?.link ?? null;
+}
+
+export function settingsRouteFor(role) {
+    if (role === 'COOPERATIVE_DIRECTOR') return '/profiles/cooperative/settings';
+    return role === 'FARMER' ? '/profiles/settings' : null;
 }
