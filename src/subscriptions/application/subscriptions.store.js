@@ -5,14 +5,13 @@
  * @module useSubscriptionsStore
  */
 import {defineStore} from "pinia";
-import {computed, ref} from "vue";
+import {computed, ref, watch} from "vue";
 import useIamStore from "../../iam/application/iam.store.js";
 import {Money} from "../../shared/domain/model/money.js";
 import {FileDownloader} from "../../shared/infrastructure/file-downloader.js";
 import {BillingCycle} from "../domain/model/entities/billing-cycle.js";
-import {Payment} from "../domain/model/entities/payment.entity.js";
 import {PaymentStatus} from "../domain/model/entities/payment-status.js";
-import {Subscription} from "../domain/model/entities/subscription.entity.js";
+import {planForRole} from "../domain/model/entities/subscription-segment.js";
 import {SubscriptionsApi} from "../infrastructure/subscriptions-api.js";
 
 const subscriptionsApi = new SubscriptionsApi();
@@ -80,6 +79,20 @@ const useSubscriptionsStore = defineStore('subscriptions', () => {
         return new Money(discounted, price.currency);
     });
 
+    const eligiblePlans = computed(() => plans.value.filter(plan => plan.code === planForRole(iamStore.currentRole)));
+    let loadRevision = 0;
+
+    watch(() => iamStore.currentUser, () => {
+        loadRevision++;
+        subscription.value = null;
+        payments.value = [];
+        plotQuotaReady.value = false;
+        loading.value = false;
+        processing.value = false;
+        billingCycle.value = BillingCycle.MONTHLY;
+        resetCheckout();
+    }, { flush: 'sync' });
+
     // Actions
 
     /** Loads the plans of the catalog. */
@@ -99,21 +112,26 @@ const useSubscriptionsStore = defineStore('subscriptions', () => {
      * @param {number} userId - Owner of the subscription.
      */
     function loadMySubscription(userId) {
+        if (userId !== currentUserId.value) return;
+        const revision = ++loadRevision;
         startLoading();
-        Promise.all([subscriptionsApi.getPlans(), subscriptionsApi.getSubscriptionByUserId(userId)])
+        return Promise.all([subscriptionsApi.getPlans(), subscriptionsApi.getSubscriptionByUserId(userId)])
             .then(([loadedPlans, found]) => {
                 const ready = found ? withPlan(found, loadedPlans) : null;
                 return (ready ? subscriptionsApi.getPayments(ready.id) : Promise.resolve([]))
                     .then(loadedPayments => ({ loadedPlans, ready, loadedPayments }));
             })
             .then(({ loadedPlans, ready, loadedPayments }) => {
+                if (revision !== loadRevision) return;
                 plans.value = loadedPlans;
                 subscription.value = ready;
                 payments.value = newestFirst(loadedPayments);
                 plotQuotaReady.value = true;
                 loading.value = false;
             })
-            .catch(cause => fail(cause, 'subscriptions.errors.load-subscription'));
+            .catch(cause => {
+                if (revision === loadRevision) fail(cause, 'subscriptions.errors.load-subscription');
+            });
     }
 
     /**
@@ -121,16 +139,17 @@ const useSubscriptionsStore = defineStore('subscriptions', () => {
      * @param {import('../domain/model/commands/select-subscription-plan.command.js').SelectSubscriptionPlanCommand} command - Plan and billing cycle chosen by the user.
      */
     function selectPlan(command) {
-        const plan = plans.value.find(candidate => candidate.code === command.planCode);
+        const plan = eligiblePlans.value.find(candidate => candidate.code === command.planCode);
         if (!plan || command.userId !== currentUserId.value) {
             error.value = 'subscriptions.errors.select-plan';
-            return;
+            return false;
         }
         error.value = null;
         paymentResult.value = null;
         coupon.value = null;
         billingCycle.value = command.billingCycle;
         selectedPlan.value = plan;
+        return true;
     }
 
     /** Switches the catalog between monthly and annual prices. */
@@ -143,10 +162,13 @@ const useSubscriptionsStore = defineStore('subscriptions', () => {
      * @param {import('../domain/model/commands/apply-coupon.command.js').ApplyCouponCommand} command - Code typed by the user.
      */
     function applyCoupon(command) {
-        if (!selectedPlan.value) return;
+        const plan = selectedPlan.value;
+        const user = iamStore.currentUser;
+        if (!plan || processing.value) return;
         error.value = null;
         subscriptionsApi.getCouponDiscount(command.couponCode)
             .then(discountPercent => {
+                if (iamStore.currentUser !== user || selectedPlan.value !== plan) return;
                 if (discountPercent === null) {
                     coupon.value = null;
                     error.value = 'subscriptions.errors.invalid-coupon';
@@ -171,15 +193,21 @@ const useSubscriptionsStore = defineStore('subscriptions', () => {
         const plan = selectedPlan.value;
         const userId = currentUserId.value;
         const current = subscription.value;
-        if (!plan || userId === null || processing.value) return;
+        if (!plan || plan.code !== planForRole(iamStore.currentRole) ||
+            userId === null || processing.value || !plotQuotaReady.value) return;
+        const user = iamStore.currentUser;
+        const amount = checkoutAmount.value;
+        if (!amount || command.amount.amount !== amount.amount || command.amount.currency !== amount.currency) return;
         if (command.subscriptionId !== (current?.id ?? null)) return;
 
-        const status = command.simulatedStatus ?? PaymentStatus.COMPLETED;
+        const status = command.simulatedStatus;
+        if (![PaymentStatus.COMPLETED, PaymentStatus.REJECTED].includes(status)) return;
         processing.value = true;
         error.value = null;
 
-        chargeAndActivate(userId, plan, current, command, status)
+        subscriptionsApi.submitDemoPayment({ userId, plan, current, command, status, cycle: billingCycle.value })
             .then(({ subscription: saved, payment }) => {
+                if (iamStore.currentUser !== user) return;
                 if (saved) {
                     saved.plan = plan;
                     subscription.value = saved;
@@ -191,6 +219,7 @@ const useSubscriptionsStore = defineStore('subscriptions', () => {
                 processing.value = false;
             })
             .catch(cause => {
+                if (iamStore.currentUser !== user) return;
                 processing.value = false;
                 fail(cause, 'subscriptions.errors.payment');
             });
@@ -203,6 +232,7 @@ const useSubscriptionsStore = defineStore('subscriptions', () => {
     function cancelSubscription(command) {
         const current = subscription.value;
         if (!current || current.id !== command.subscriptionId || processing.value) return;
+        const user = iamStore.currentUser;
         const cancelled = current.copy();
         try {
             cancelled.cancel();
@@ -214,11 +244,13 @@ const useSubscriptionsStore = defineStore('subscriptions', () => {
         error.value = null;
         subscriptionsApi.updateSubscription(cancelled)
             .then(saved => {
+                if (iamStore.currentUser !== user) return;
                 saved.plan = current.plan;
                 subscription.value = saved;
                 processing.value = false;
             })
             .catch(cause => {
+                if (iamStore.currentUser !== user) return;
                 processing.value = false;
                 fail(cause, 'subscriptions.errors.cancel');
             });
@@ -247,43 +279,6 @@ const useSubscriptionsStore = defineStore('subscriptions', () => {
     }
 
     // Private helpers
-
-    /**
-     * Activates the plan when the payment is approved and saves the payment.
-     * The subscription is saved first because the payment needs its id.
-     */
-    function chargeAndActivate(userId, plan, current, command, status) {
-        if (status === PaymentStatus.REJECTED) {
-            if (!current) return Promise.resolve({ subscription: null, payment: null });
-            return subscriptionsApi.createPayment(newPayment(current.id, command.amount, status))
-                .then(payment => ({ subscription: null, payment }));
-        }
-
-        const today = new Date();
-        const cycle = billingCycle.value;
-        let saving;
-        if (current) {
-            const renewed = current.copy();
-            renewed.changePlan(plan, cycle, today);
-            saving = subscriptionsApi.updateSubscription(renewed);
-        } else {
-            const created = Subscription.start({ userId, plan, billingCycle: cycle, startDate: today });
-            saving = subscriptionsApi.createSubscription(created);
-        }
-        return saving.then(saved => subscriptionsApi.createPayment(newPayment(saved.id, command.amount, status))
-            .then(payment => ({ subscription: saved, payment })));
-    }
-
-    function newPayment(subscriptionId, amount, status) {
-        return new Payment({
-            id: 0,
-            subscriptionId,
-            amount,
-            transactionToken: `demo-tx-${Date.now()}`,
-            status,
-            paidAt: new Date()
-        });
-    }
 
     /** Completes the plan of a subscription from the catalog. */
     function withPlan(found, loadedPlans) {
@@ -314,6 +309,7 @@ const useSubscriptionsStore = defineStore('subscriptions', () => {
 
     return {
         plans,
+        eligiblePlans,
         subscription,
         payments,
         billingCycle,
