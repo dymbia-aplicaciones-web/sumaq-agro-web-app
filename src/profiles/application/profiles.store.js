@@ -132,8 +132,15 @@ const useProfilesStore = defineStore('profiles', () => {
             if (iam.currentUser !== director) return;
             cooperative.value = organization;
             if (!organization) return;
-            const loaded = await profilesApi.getInstitutionalDashboard(directorUserId);
-            if (iam.currentUser === director) dashboard.value = loaded;
+            const directory = await profilesApi.getCooperativeMembers(organization.id);
+            const activeMembers = directory.filter(member => member.active);
+            const accountIds = [...new Set(activeMembers.map(member => member.userId).filter(Boolean))];
+            const plots = (await Promise.all(accountIds.map(id => fieldsApi.getPlotsByOwner(id)))).flat();
+            if (iam.currentUser === director) dashboard.value = {
+                cooperativeName: organization.legalName,
+                activeMembers: activeMembers.length,
+                monitoredHectares: plots.reduce((total, plot) => total + plot.areaHectares, 0)
+            };
         } catch (cause) {
             if (iam.currentUser === director) error.value = cause.message;
         } finally {
@@ -345,15 +352,13 @@ const useProfilesStore = defineStore('profiles', () => {
     }
 
     async function loadMemberHarvest(member) {
-        const [batchesResponse, certificatesResponse] = await Promise.all([
-            harvestApi.getBatchesByCooperative(member.cooperativeId), harvestApi.getCertificates()
-        ]);
+        const batchesResponse = await harvestApi.getBatchesByCooperative(member.cooperativeId, member.id);
         const batches = HarvestBatchAssembler.toEntitiesFromResponse(batchesResponse)
             .filter(batch => batch.cooperativeId === member.cooperativeId && batch.memberId === member.id)
             .sort((a, b) => b.collectedAt.localeCompare(a.collectedAt));
-        const batchIds = new Set(batches.map(batch => batch.id));
-        const certificates = QualityCertificateAssembler.toEntitiesFromResponse(certificatesResponse)
-            .filter(certificate => batchIds.has(certificate.harvestBatchId))
+        const certificates = (await Promise.all(batches.filter(batch => batch.status === 'CERTIFIED')
+            .map(batch => harvestApi.getCertificateByBatch(batch.id)))).filter(Boolean)
+            .map(response => QualityCertificateAssembler.toEntityFromResource(response.data))
             .sort((a, b) => b.issuedAt.localeCompare(a.issuedAt));
         return { batches, certificates };
     }

@@ -941,6 +941,7 @@
         "denied": "Solo puedes vincular asesores disponibles a tus propias parcelas.",
         "conflict": "Hay asignaciones duplicadas para esta parcela. Solicita revisar los datos."
       },
+      "assignment-read-only": "Aquí puedes consultar tu asignación actual.",
       "by-director": "La directiva de tu cooperativa asigna el asesor de cada parcela."
     }
   },

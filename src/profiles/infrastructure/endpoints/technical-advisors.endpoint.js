@@ -1,3 +1,5 @@
+import {resourcesFromResponse} from "../../../shared/infrastructure/base-assembler.js";
+import {FarmerProfilesApiEndpoint} from "./farmer-profiles.endpoint.js";
 import {BaseEndpoint} from "../../../shared/infrastructure/base-endpoint.js";
 import {TechnicalAdvisorAssembler} from "../assemblers/technical-advisor.assembler.js";
 
@@ -19,8 +21,21 @@ export class TechnicalAdvisorsApiEndpoint extends BaseEndpoint {
      * @param {number} cooperativeId - Cooperative.
      * @returns {Promise<import('../../domain/model/entities/technical-advisor.entity.js').TechnicalAdvisor[]>} Advisors of the cooperative.
      */
-    getByCooperative(cooperativeId) {
-        return this.getAllBy({ cooperativeId }).then(response => TechnicalAdvisorAssembler.toEntitiesFromResponse(response));
+    async getByCooperative(cooperativeId) {
+        const response = await this.getAllBy({ cooperativeId });
+        const assignments = resourcesFromResponse(response, 'assignments').filter(item => item.active);
+        const counts = new Map();
+        for (const item of assignments)
+            counts.set(item.agronomistUserId, (counts.get(item.agronomistUserId) ?? 0) + 1);
+        const profiles = new FarmerProfilesApiEndpoint({ http: this.http });
+        return Promise.all([...counts].map(async ([userId, assignedPlotsCount]) => {
+            const profile = await profiles.getByUser(userId);
+            return TechnicalAdvisorAssembler.toEntityFromResource({
+                id: userId, userId, cooperativeId, assignedPlotsCount,
+                name: [profile.firstName, profile.lastName].filter(Boolean).join(' '),
+                cipCode: '', phone: profile.phoneNumber ?? ''
+            });
+        }));
     }
 
     /**

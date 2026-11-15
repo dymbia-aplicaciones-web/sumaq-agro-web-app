@@ -9,11 +9,13 @@ import {defineStore} from "pinia";
 import {computed, ref, watch} from "vue";
 import useIamStore from "../../iam/application/iam.store.js";
 import useFieldManagementStore from "../../field-management/application/field-management.store.js";
+import {FieldManagementApi} from "../../field-management/infrastructure/field-management-api.js";
 import {ProfilesApi} from "../infrastructure/profiles-api.js";
 import {PlotAdvisorAssignmentsApi} from "../infrastructure/plot-advisor-assignments.api.js";
 
 const profiles = new ProfilesApi();
 const api = new PlotAdvisorAssignmentsApi();
+const fieldsApi = new FieldManagementApi();
 
 /**
  * Reactive store that exposes the advisor of each plot of the farmer.
@@ -60,11 +62,24 @@ const useFarmerAdvisoryStore = defineStore('farmer-advisory', () => {
         if (user?.experience !== 'FARMER') return;
         loadingState.value = true;
         Promise.all([
-            profiles.getAvailableAdvisors(),
-            api.getByProducer(user.id),
+            fieldsApi.getPlotsByOwner(user.id),
             profiles.getMembershipsByUser(user.id)
         ])
-            .then(([loadedAdvisors, loadedAssignments, memberships]) => {
+            .then(async ([plots, memberships]) => {
+                const loadedAssignments = (await Promise.all(plots.map(async plot => {
+                    const item = await api.getActiveByPlot(plot.id);
+                    return item && {
+                        ...item,
+                        producerUserId: user.id,
+                        advisorUserId: item.agronomistUserId,
+                        status: 'ACTIVE'
+                    };
+                }))).filter(Boolean);
+                const advisorIds = [...new Set(loadedAssignments.map(item => item.advisorUserId))];
+                const loadedAdvisors = await Promise.all(advisorIds.map(async userId => {
+                    const advisor = await profiles.getFarmerProfile(userId);
+                    return { userId, name: [advisor?.firstName, advisor?.lastName].filter(Boolean).join(' ') || `#${userId}` };
+                }));
                 if (!isCurrent(started)) return;
                 advisorState.value = loadedAdvisors;
                 assignmentState.value = loadedAssignments;
@@ -101,7 +116,7 @@ const useFarmerAdvisoryStore = defineStore('farmer-advisory', () => {
      * @returns {boolean} `true` when this loaded producer can assign the referenced plot.
      */
     function canAssign(plotId) {
-        return current.value && ready.value && !advisorAssignedByDirector.value && !loading.value && !saving.value && owns(plotId);
+        return false;
     }
 
     /**
