@@ -80,8 +80,7 @@ const dateTime = (value) => formatDate(value, locale.value, { dateStyle: 'medium
 <template>
   <div class="page">
     <div v-if="caseId"><pv-button text :label="t('crop-health.case.open')" @click="router.push(`/crop-health/reports/${caseId}`)"/></div>
-    <page-header :eyebrow="t('crop-health.clinical-eyebrow')" :title="t('crop-health.inspections-title')"/>
-    <nav><pv-button outlined class="sa-pill" :label="t('crop-health.inbox-title')" @click="router.push('/crop-health/inbox')"/></nav>
+    <page-header :breadcrumbs="[{ label: 'option.diagnosis-inbox', link: '/crop-health/inbox' }, {label: 'crop-health.inspections-title'}]" :title="t('crop-health.inspections-title')"/>
     <p v-if="store.writeError" class="sa-error m-0" role="alert">{{ t(store.writeError) }}</p>
     <pv-progress-bar v-if="store.clinicalLoading || store.saving" mode="indeterminate" style="height: 4px" :aria-label="t('common.loading')"/>
     <message-card v-if="store.clinicalError" icon="pi pi-times-circle" :message="t(store.clinicalError)" alert/>
@@ -149,4 +148,7 @@ const dateTime = (value) => formatDate(value, locale.value, { dateStyle: 'medium
   border-radius: var(--sa-radius-card);
   box-shadow: none;
 }
+.page :deep(.p-card) { background: var(--sa-surface-container-low); }
+.page :deep(.p-card-title) { font-size: 1.35rem; font-weight: 500; }
+.page :deep(.p-card-subtitle) { color: inherit; font-weight: 600; }
 </style>
