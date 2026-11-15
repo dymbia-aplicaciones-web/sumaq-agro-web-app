@@ -15,17 +15,24 @@ const loading = ref(true);
 const error = ref(null);
 
 // Each token of the URL starts a new public query.
-watch(() => route.params.token, token => {
+watch(() => route.params.token, (token, _, onCleanup) => {
+  let current = true;
+  onCleanup(() => { current = false; });
   loading.value = true;
   error.value = null;
   record.value = null;
   store.verifyCertificate(String(token ?? ''))
       .then(result => {
+        if (!current) return;
         if (!result) error.value = 'harvest-certification.trace.unknown-code';
         record.value = result;
       })
-      .catch(() => error.value = 'harvest-certification.trace.api-unavailable')
-      .finally(() => loading.value = false);
+      .catch(() => {
+        if (current) error.value = 'harvest-certification.trace.api-unavailable';
+      })
+      .finally(() => {
+        if (current) loading.value = false;
+      });
 }, { immediate: true });
 </script>
 
