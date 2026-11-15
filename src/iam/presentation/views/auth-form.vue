@@ -2,6 +2,7 @@
 import {computed, reactive, ref, watch} from 'vue';
 import {useI18n} from 'vue-i18n';
 import {useRoute, useRouter} from 'vue-router';
+import {developmentAccounts, mockAuthentication} from '../../infrastructure/mock/development-authentication.js';
 import useIamStore from '../../application/iam.store.js';
 import {UserRole} from '../../domain/model/user.entity.js';
 
@@ -10,11 +11,17 @@ const {t} = useI18n();
 const route = useRoute();
 const router = useRouter();
 const iam = useIamStore();
+function fillDevelopmentAccount(email) {
+    fields.email = email;
+    fields.password = 'SumaqAgroDemo2026!';
+}
+
 const fields = reactive({email: '', password: '', confirmation: '', firstName: '', lastName: '', role: null});
 const busy = ref(false);
 const completed = ref(false);
 const error = ref('');
 const recovery = computed(() => ['forgot', 'reset'].includes(props.mode));
+const recoveryPreview = computed(() => mockAuthentication && recovery.value);
 const key = computed(() => recovery.value ? 'iam.recovery.' + props.mode : 'iam.' + props.mode);
 const token = computed(() => typeof route.query.token === 'string' ? route.query.token.trim() : '');
 const roles = computed(() => Object.values(UserRole).map(value => ({value, label: t('iam.roles.' + value)})));
@@ -96,9 +103,14 @@ async function submit() {
       <template #title>{{ t(key + '.title') }}</template>
       <template #subtitle>{{ t(key + '.subtitle') }}</template>
       <template #content>
+        <pv-message v-if="recoveryPreview" severity="info">{{ t('iam.recovery.previewNotice') }}</pv-message>
+        <div v-if="mode === 'signIn' && developmentAccounts.length" class="flex flex-wrap gap-2 mb-3">
+          <pv-button v-for="account in developmentAccounts" :key="account.id" type="button" outlined
+                     :disabled="busy" :label="t('iam.roles.' + account.role)" @click="fillDevelopmentAccount(account.email)"/>
+        </div>
         <pv-message v-if="mode === 'reset' && !token" severity="error">{{ t('iam.recovery.errors.INVALID_LINK') }}</pv-message>
         <pv-message v-else-if="completed" severity="success">
-          {{ t(key + (mode === 'signIn' ? '.success' : '.successMessage')) }}
+          {{ t(key + (recoveryPreview ? '.previewResult' : mode === 'signIn' ? '.success' : '.successMessage')) }}
         </pv-message>
         <form v-else class="flex flex-column gap-2" novalidate @submit.prevent="submit">
           <template v-if="mode === 'signUp'">
@@ -123,7 +135,7 @@ async function submit() {
             </template>
           </template>
           <pv-message v-if="error" severity="error">{{ t(error) }}</pv-message>
-          <pv-button type="submit" :loading="busy" :label="t(key + '.submit')"/>
+          <pv-button type="submit" :loading="busy" :label="t(recoveryPreview ? 'iam.recovery.previewSubmit' : key + '.submit')"/>
         </form>
         <div class="flex flex-wrap gap-3 mt-3">
           <template v-if="mode === 'signIn'">
@@ -131,6 +143,8 @@ async function submit() {
             <router-link :to="{name: 'iam-forgot-password'}">{{ t('iam.recovery.forgotLink') }}</router-link>
           </template>
           <router-link v-else :to="{name: 'iam-sign-in'}">{{ t('iam.recovery.backToSignIn') }}</router-link>
+          <router-link v-if="recoveryPreview && mode === 'forgot' && completed"
+                       :to="{name: 'iam-reset-password', query: {token: 'preview'}}">{{ t('iam.recovery.previewReset') }}</router-link>
           <router-link v-if="mode === 'reset' && !completed" :to="{name: 'iam-forgot-password'}">{{ t('iam.recovery.requestNewLink') }}</router-link>
         </div>
       </template>
