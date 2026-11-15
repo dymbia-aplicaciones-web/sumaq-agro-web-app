@@ -1,6 +1,7 @@
 <script setup>
 import {useI18n} from "vue-i18n";
 import {useRouter} from "vue-router";
+import useIamStore from "../../../iam/application/iam.store.js";
 import useSubscriptionsStore from "../../application/subscriptions.store.js";
 import {ApplyCouponCommand} from "../../domain/model/commands/apply-coupon.command.js";
 import {SubmitPaymentCommand} from "../../domain/model/commands/submit-payment.command.js";
@@ -13,6 +14,7 @@ import CouponForm from "../components/coupon-form.vue";
 const { t } = useI18n();
 const router = useRouter();
 const store = useSubscriptionsStore();
+const iam = useIamStore();
 
 const breadcrumbs = [
   { label: 'subscriptions.catalog.title', link: '/subscriptions/plans' },
@@ -66,7 +68,9 @@ const onReturnToCatalog = () => {
                   :message="t(store.paymentResult === PaymentStatus.COMPLETED ? 'subscriptions.checkout.payment-approved' : 'subscriptions.checkout.payment-rejected')"
                   :alert="store.paymentResult === PaymentStatus.REJECTED">
       <template v-if="store.paymentResult === PaymentStatus.COMPLETED" #actions>
-        <pv-button :label="t('subscriptions.checkout.view-billing')" @click="router.push('/subscriptions/billing')"/>
+        <pv-button v-if="iam.currentUser?.initialRoute" :label="t('subscriptions.checkout.go-to-dashboard')"
+                   @click="router.push(iam.currentUser.initialRoute)"/>
+        <pv-button outlined :label="t('subscriptions.checkout.view-billing')" @click="router.push({ name: 'subscriptions-billing' })"/>
       </template>
     </message-card>
 
