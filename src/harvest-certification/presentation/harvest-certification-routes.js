@@ -5,7 +5,7 @@ const publicTraceability = () => import('./views/public-traceability.vue');
 /** Private routes (under `/harvest-certification`), as in `harvest-certification.routes.ts`. */
 const harvestCertificationRoutes = [
     {   path: '',               redirect: { name: 'harvest-certification-certificates' } },
-    {   path: 'certificates',   name: 'harvest-certification-certificates',  component: harvestCertificates, meta: { title: 'harvest-certification.page-title' } }
+    {   path: 'certificates',   name: 'harvest-certification-certificates',  component: harvestCertificates, meta: { title: 'harvest-certification.page-title', roles: ['FARMER', 'COOPERATIVE_DIRECTOR'] } }
 ];
 
 /** Public QR verification (under `/verify`), shown without the shell or a session. */

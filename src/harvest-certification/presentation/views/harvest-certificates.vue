@@ -1,10 +1,11 @@
 <script setup>
-import {computed, onMounted, ref, watch} from "vue";
+import {computed, nextTick, onMounted, ref, watch} from "vue";
 import {useI18n} from "vue-i18n";
 import useHarvestCertificationStore from "../../application/harvest-certification.store.js";
 import useIamStore from "../../../iam/application/iam.store.js";
 import HarvestBatchRegistration from "../components/harvest-batch-registration.vue";
 import HarvestGradingSheet from "../components/harvest-grading-sheet.vue";
+import {printCertificate} from "../components/certificate-print.js";
 import CertificateDocument from "../components/certificate-document.vue";
 import {formatDate, formatNumber} from "../../../shared/presentation/format.js";
 
@@ -32,7 +33,7 @@ const draft = ref(null);
 const formError = ref(null);
 const busy = ref(false);
 
-const emptyForm = () => ({ memberId: 1, plotId: 1, grossKg: 0, tareKg: 0, sampleKg: 1, firstPercentage: 72,
+const emptyForm = () => ({ memberId: null, plotId: null, grossKg: 0, tareKg: 0, sampleKg: 1, firstPercentage: 72,
   secondPercentage: 20, thirdPercentage: 8, weevilDamagePercentage: 1.2, scaScore: 85 });
 const form = ref(emptyForm());
 
@@ -43,14 +44,14 @@ const cropOptions = [
 ];
 const qualityOptions = [
   { value: 'ALL', label: 'harvest-certification.filters.all-feminine' },
-  ...['PREMIUM_GOLD', 'STANDARD', 'SPECIALTY_COFFEE', 'COMMERCIAL_COFFEE'].map(value => ({ value, label: `harvest-certification.quality-category.${value}` }))
+  ...['PREMIUM_GOLD', 'STANDARD', 'B_GRADE_REQUIRES_SORTING', 'SPECIALTY_COFFEE', 'COMMERCIAL_COFFEE'].map(value => ({ value, label: `harvest-certification.quality-category.${value}` }))
 ];
 
 onMounted(() => store.load());
 
 /** Certificates of the farmer's own batches. */
 const farmerCertificates = computed(() => store.activeCertificates.flatMap(certificate => {
-  const batch = store.batches.find(item => item.id === certificate.harvestBatchId && item.memberId === iamStore.currentUserId);
+  const batch = store.batches.find(item => item.id === certificate.harvestBatchId);
   return batch ? [{ certificate, batch }] : [];
 }));
 
@@ -85,6 +86,7 @@ const toggleFarmerQr = id => visibleQr.value = visibleQr.value === id ? null : i
 
 /** Opens the evaluation dialog with an empty form. */
 const openNew = () => {
+  if (!store.canIssue) return;
   form.value = emptyForm();
   formError.value = null;
   busy.value = false;
@@ -146,7 +148,30 @@ const dialogVisible = computed({
   set: visible => { if (!visible) dialog.value = 'closed'; }
 });
 
-const print = () => window.print();
+const print = async () => {
+  await nextTick();
+  const documentElement = document.getElementById('print-certificate');
+  if (documentElement && selectedCertificate.value) await printCertificate(documentElement);
+};
+
+const printFarmerCertificate = async certificate => {
+  selectedCertificate.value = certificate;
+  selectedBatch.value = store.batches.find(batch => batch.id === certificate.harvestBatchId);
+  try {
+    await print();
+  } finally {
+    selectedCertificate.value = null;
+    selectedBatch.value = null;
+  }
+};
+
+watch(() => iamStore.currentUser, () => {
+  dialog.value = 'closed';
+  selectedBatch.value = null;
+  selectedCertificate.value = null;
+  draft.value = null;
+  visibleQr.value = null;
+});
 </script>
 
 <template>
@@ -155,10 +180,14 @@ const print = () => window.print();
 
     <!-- Farmer: own certificates with the QR -->
     <div v-if="isFarmer">
+      <div v-if="selectedBatch && selectedCertificate" hidden>
+        <certificate-document :batch="selectedBatch" :certificate="selectedCertificate"/>
+      </div>
       <header class="mb-3">
         <h1 class="farmer-title">{{ t('harvest-certification.farmer.title') }}</h1>
         <p class="farmer-subtitle">{{ t('harvest-certification.farmer.subtitle') }}</p>
       </header>
+      <pv-message v-if="store.notice" severity="info">{{ t(store.notice) }}</pv-message>
       <div v-if="store.error" class="error-banner" role="alert">
         {{ t('harvest-certification.load-save-error') }} {{ t(store.error) }}
         <button type="button" @click="store.load()">{{ t('common.retry') }}</button>
@@ -179,7 +208,7 @@ const print = () => window.print();
         </div>
         <div class="flex flex-wrap align-items-center gap-3 mt-3">
           <pv-button icon="pi pi-qrcode" :label="t('harvest-certification.farmer.show-qr')" @click="toggleFarmerQr(row.certificate.id)"/>
-          <pv-button outlined icon="pi pi-download" :label="t('harvest-certification.farmer.download-pdf')" @click="print"/>
+          <pv-button outlined icon="pi pi-download" :label="t('harvest-certification.farmer.download-pdf')" @click="printFarmerCertificate(row.certificate)"/>
           <a class="p-button p-button-outlined no-underline" :href="verificationUrl(row.certificate)" target="_blank" rel="noopener">{{ t('harvest-certification.farmer.web-record') }}</a>
         </div>
         <div v-if="visibleQr === row.certificate.id" class="farmer-qr-panel">
@@ -201,10 +230,11 @@ const print = () => window.print();
         </div>
         <div class="header-actions">
           <span class="campaign">{{ t('harvest-certification.campaign') }} 2026-I <i class="pi pi-chevron-down" aria-hidden="true"/></span>
-          <pv-button class="primary-action" icon="pi pi-plus" :label="t('harvest-certification.evaluate-new')" :disabled="store.loading || store.members.length === 0" @click="openNew"/>
+          <pv-button class="primary-action" icon="pi pi-plus" :label="t('harvest-certification.evaluate-new')" :disabled="!store.canIssue || store.loading || !store.members.some(member => member.plots.length)" @click="openNew"/>
         </div>
       </header>
 
+      <pv-message v-if="store.notice" severity="info">{{ t(store.notice) }}</pv-message>
       <div v-if="store.error" class="error-banner" role="alert">
         {{ t('harvest-certification.load-save-error') }} {{ t(store.error) }}
         <button type="button" @click="store.load()">{{ t('common.retry') }}</button>
@@ -262,7 +292,7 @@ const print = () => window.print();
           <pv-column :header="t('harvest-certification.table.volume')"><template #body="{ data }">{{ formatNumber(data.batch.netKg, locale) }} kg</template></pv-column>
           <pv-column :header="t('harvest-certification.table.quality')">
             <template #body="{ data }">
-              <template v-if="data.batch.qualityCategory === 'SPECIALTY_COFFEE'">{{ t('harvest-certification.table.sca-points', { score: data.batch.coffeeCupping?.totalScore }) }}</template>
+              <template v-if="data.batch.cropType === 'SPECIALTY_COFFEE'">{{ t('harvest-certification.table.sca-points', { score: data.batch.coffeeCupping?.totalScore }) }}</template>
               <template v-else>{{ t('harvest-certification.table.first-rate', { rate: data.batch.potatoGrading?.firstPercentage }) }}</template>
             </template>
           </pv-column>
@@ -282,7 +312,7 @@ const print = () => window.print();
         </div>
       </div>
 
-      <pv-dialog v-model:visible="dialogVisible" modal class="evaluation-dialog" :style="{ width: '740px', maxWidth: 'calc(100vw - 30px)' }">
+      <pv-dialog v-model:visible="dialogVisible" :closable="!busy" :close-on-escape="!busy" modal class="evaluation-dialog" :style="{ width: '740px', maxWidth: 'calc(100vw - 30px)' }">
         <template #header>
           <div>
             <h2 class="dialog-title">{{ t('harvest-certification.modal.title') }}</h2>
@@ -304,6 +334,7 @@ const print = () => window.print();
           </label>
         </template>
 
+        <pv-message v-if="dialog === 'preview' && store.error" severity="error">{{ t(store.error) }}</pv-message>
         <template #footer>
           <div class="flex justify-content-between w-full">
             <template v-if="dialog === 'form'">
@@ -311,7 +342,7 @@ const print = () => window.print();
               <pv-button class="primary-action" :label="t('harvest-certification.modal.review')" @click="preview"/>
             </template>
             <template v-else-if="dialog === 'preview'">
-              <pv-button outlined severity="secondary" icon="pi pi-arrow-left" :label="t('harvest-certification.modal.modify')" @click="dialog = 'form'"/>
+              <pv-button outlined severity="secondary" icon="pi pi-arrow-left" :label="t('harvest-certification.modal.modify')" :disabled="busy || !!draft?.savedBatch" @click="dialog = 'form'"/>
               <pv-button class="primary-action" :label="t('harvest-certification.modal.issue')" :disabled="busy || store.loading" @click="issue"/>
             </template>
             <template v-else>

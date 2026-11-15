@@ -3,7 +3,6 @@ import {BaseEndpoint} from "../../shared/infrastructure/base-endpoint.js";
 
 const harvestBatchesEndpointPath       = import.meta.env.VITE_HARVEST_BATCHES_ENDPOINT_PATH;
 const qualityCertificatesEndpointPath  = import.meta.env.VITE_QUALITY_CERTIFICATES_ENDPOINT_PATH;
-const cooperativeMembersEndpointPath   = import.meta.env.VITE_COOPERATIVE_MEMBERS_ENDPOINT_PATH;
 
 /**
  * Infrastructure gateway for Harvest Certification bounded-context endpoints.
@@ -16,14 +15,12 @@ const cooperativeMembersEndpointPath   = import.meta.env.VITE_COOPERATIVE_MEMBER
 export class HarvestCertificationApi extends BaseApi {
     #batchesEndpoint;
     #certificatesEndpoint;
-    #membersEndpoint;
 
     /** Creates endpoint clients for batches, certificates and cooperative members. */
     constructor() {
         super();
         this.#batchesEndpoint = new BaseEndpoint(this, harvestBatchesEndpointPath);
         this.#certificatesEndpoint = new BaseEndpoint(this, qualityCertificatesEndpointPath);
-        this.#membersEndpoint = new BaseEndpoint(this, cooperativeMembersEndpointPath);
     }
 
     /** @param {number} cooperativeId - Cooperative. @returns {Promise<import('axios').AxiosResponse>} Batches. */
@@ -61,8 +58,5 @@ export class HarvestCertificationApi extends BaseApi {
         return this.#certificatesEndpoint.create(resource);
     }
 
-    /** @param {number} cooperativeId - Cooperative. @returns {Promise<import('axios').AxiosResponse>} Members with their plots. */
-    getMembersByCooperative(cooperativeId) {
-        return this.#membersEndpoint.getAllBy({ cooperativeId });
-    }
+
 }
