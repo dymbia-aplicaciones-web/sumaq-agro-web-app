@@ -30,7 +30,7 @@
     "assigned-plots": "Assigned plots"
   },
   "layout": {
-    "search": "Search within my plot...",
+    "search": "Search plots…",
     "menu": "Open menu",
     "connection": "Connection status",
     "connected": "Connected",
@@ -38,7 +38,8 @@
     "notifications": "Notifications",
     "profile": "My profile",
     "sign-out": "Log Out",
-    "offline-mode": "OFFLINE Mode"
+    "offline-mode": "OFFLINE Mode",
+    "no-plot-matches": "No plots found"
   },
   "language": {
     "label": "Language",
