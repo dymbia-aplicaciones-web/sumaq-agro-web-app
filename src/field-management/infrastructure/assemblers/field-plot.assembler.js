@@ -28,7 +28,7 @@ export class FieldPlotAssembler {
             name: resource.name,
             region: resource.region,
             status: resource.status,
-            boundary: (resource.boundary ?? []).map(([latitude, longitude]) => new GeoCoordinate(latitude, longitude)),
+            boundary: (resource.boundary ?? []).map(point => new GeoCoordinate(point.latitude ?? point[0], point.longitude ?? point[1])),
             areaHectares: resource.areaHectares,
             agroMonitoringPolygonId: resource.agroMonitoringPolygonId || null,
             soilBaseline: resource.soilBaseline ? this.#toSoilBaseline(resource.soilBaseline) : null

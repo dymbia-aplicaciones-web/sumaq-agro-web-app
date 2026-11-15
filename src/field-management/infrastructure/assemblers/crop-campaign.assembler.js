@@ -24,11 +24,11 @@ export class CropCampaignAssembler {
     static toEntityFromResource(resource) {
         return new CropCampaign({
             id: Number(resource.id),
-            plotId: resource.plotId,
+            plotId: resource.fieldPlotId ?? resource.plotId,
             season: resource.season,
             cropType: resource.cropType,
             seedVariety: resource.seedVariety,
-            customSeedVariety: resource.seedVarietyCustom ?? false,
+            customSeedVariety: resource.customSeedVariety ?? resource.seedVarietyCustom ?? false,
             sowingDate: resource.sowingDate ? fromApiDate(resource.sowingDate) : null,
             status: resource.status
         });
@@ -42,11 +42,11 @@ export class CropCampaignAssembler {
     static toResourceFromEntity(entity) {
         return {
             id: entity.id,
-            plotId: entity.plotId,
+            fieldPlotId: entity.plotId,
             season: entity.season,
             cropType: entity.cropType,
             seedVariety: entity.seedVariety,
-            seedVarietyCustom: entity.customSeedVariety,
+            customSeedVariety: entity.customSeedVariety,
             sowingDate: entity.sowingDate ? toApiDate(entity.sowingDate) : null,
             status: entity.status
         };

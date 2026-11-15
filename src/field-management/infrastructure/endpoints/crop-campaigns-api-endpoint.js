@@ -1,7 +1,7 @@
 import {BaseEndpoint} from "../../../shared/infrastructure/base-endpoint.js";
 import {CropCampaignAssembler} from "../assemblers/crop-campaign.assembler.js";
 
-const cropCampaignsEndpointPath = import.meta.env.VITE_CROP_CAMPAIGNS_ENDPOINT_PATH;
+const cropCampaignsEndpointPath = import.meta.env.VITE_CROP_CAMPAIGNS_ENDPOINT_PATH || '/crop-campaigns';
 
 /**
  * HTTP endpoint for the crop campaigns resource (`/crop-campaigns`).
@@ -21,7 +21,7 @@ export class CropCampaignsApiEndpoint extends BaseEndpoint {
      * @returns {Promise<import('../../domain/model/entities/crop-campaign.entity.js').CropCampaign[]>} Campaigns of the plot.
      */
     getByPlot(plotId) {
-        return this.getAllBy({ plotId }).then(response => CropCampaignAssembler.toEntitiesFromResponse(response));
+        return this.http.get(`/field-plots/${plotId}/crop-campaigns`).then(response => CropCampaignAssembler.toEntitiesFromResponse(response));
     }
 
     /**

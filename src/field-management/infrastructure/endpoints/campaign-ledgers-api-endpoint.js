@@ -1,7 +1,7 @@
 import {BaseEndpoint} from "../../../shared/infrastructure/base-endpoint.js";
 import {CampaignLedgerAssembler} from "../assemblers/campaign-ledger.assembler.js";
 
-const campaignLedgersEndpointPath = import.meta.env.VITE_CAMPAIGN_LEDGERS_ENDPOINT_PATH;
+const campaignLedgersEndpointPath = import.meta.env.VITE_CAMPAIGN_LEDGERS_ENDPOINT_PATH || '/campaign-ledgers';
 
 /**
  * HTTP endpoint for the cost ledgers resource (`/campaign-ledgers`).

@@ -345,7 +345,7 @@ const useFieldManagementStore = defineStore('field-management', () => {
             return;
         }
         startLoading();
-        withRetry(() => fieldManagementApi.updatePlot(plot))
+        withRetry(() => fieldManagementApi.updatePlot(plot, "polygon"))
             .then(updated => {
                 replacePlot(updated);
                 loading.value = false;
@@ -659,7 +659,7 @@ const useFieldManagementStore = defineStore('field-management', () => {
             return Promise.resolve(false);
         }
         startLoading();
-        return withRetry(() => fieldManagementApi.updatePlot(plot))
+        return withRetry(() => fieldManagementApi.updatePlot(plot, "soil-baseline"))
             .then(saved => {
                 replacePlot(saved);
                 loading.value = false;
