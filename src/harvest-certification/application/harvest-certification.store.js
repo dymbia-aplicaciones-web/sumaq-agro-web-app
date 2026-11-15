@@ -6,22 +6,19 @@
  * @module useHarvestCertificationStore
  */
 import {defineStore} from "pinia";
-import {computed, ref} from "vue";
+import {computed, ref, watch} from "vue";
 import {HarvestCertificationApi} from "../infrastructure/harvest-certification-api.js";
 import {HarvestBatchAssembler} from "../infrastructure/harvest-batch.assembler.js";
 import {QualityCertificateAssembler} from "../infrastructure/quality-certificate.assembler.js";
 import {HarvestBatch} from "../domain/model/harvest-batch.entity.js";
 import {BatchStatus, CertificateStatus, HarvestCropType} from "../domain/model/harvest-certification.enums.js";
 import {classifyQuality, validateEvaluation} from "../domain/model/quality-grading.js";
-import {resourcesFromResponse} from "../../shared/infrastructure/base-assembler.js";
+import {ProfilesApi} from "../../profiles/infrastructure/profiles-api.js";
+import useIamStore from "../../iam/application/iam.store.js";
 
 const harvestCertificationApi = new HarvestCertificationApi();
 
-/** Cooperative of the demo (Angular `load(cooperativeId = 1)`). */
-const DEMO_COOPERATIVE_ID = 1;
-
-/** Issuer of the demo certificates: the cooperative director (user 3). */
-const DEMO_ISSUER = { userId: 3, name: 'Cristian Santana' };
+const profiles = new ProfilesApi();
 
 /**
  * Reactive store that exposes Harvest Certification commands and queries.
@@ -41,31 +38,60 @@ const useHarvestCertificationStore = defineStore('harvest-certification', () => 
     /** Certificates that are still valid. */
     const activeCertificates = computed(() => certificates.value.filter(item => item.isActive()));
 
-    function fail(cause) {
-        console.error(cause);
-        error.value = cause.message;
+    const iam = useIamStore();
+    const cooperativeId = ref(null);
+    const ready = ref(false);
+    const notice = ref(null);
+    const canIssue = computed(() => ready.value && cooperativeId.value !== null &&
+        iam.currentRole === 'COOPERATIVE_DIRECTOR');
+    let revision = 0;
+
+    async function load() {
+        const request = ++revision;
+        const user = iam.currentUser;
+        cooperativeId.value = null;
+        batches.value = [];
+        certificates.value = [];
+        members.value = [];
+        error.value = null;
+        notice.value = null;
+        ready.value = false;
         loading.value = false;
+        if (!['FARMER', 'COOPERATIVE_DIRECTOR'].includes(user?.experience)) return;
+        loading.value = true;
+        try {
+            const director = user.experience === 'COOPERATIVE_DIRECTOR';
+            const organization = director ? await profiles.getCooperativeByDirector(user.id) : null;
+            const id = organization?.directorUserId === user.id ? organization.id : null;
+            const scopedMembers = director
+                ? (id === null ? [] : await profiles.getCooperativeMembers(id))
+                : await profiles.getMembershipsByUser(user.id);
+            const active = scopedMembers.filter(member => member.active &&
+                (director ? member.cooperativeId === id : member.userId === user.id));
+            const ids = director ? (id === null ? [] : [id]) : [...new Set(active.map(member => member.cooperativeId))];
+            const [collections, certificateResponse] = await Promise.all([
+                Promise.all(ids.map(value => harvestCertificationApi.getBatchesByCooperative(value))),
+                ids.length ? harvestCertificationApi.getCertificates() : null
+            ]);
+            if (revision !== request || iam.currentUser !== user) return;
+            batches.value = collections.flatMap(response => HarvestBatchAssembler.toEntitiesFromResponse(response))
+                .filter(batch => director ? batch.cooperativeId === id :
+                    active.some(member => member.id === batch.memberId && member.cooperativeId === batch.cooperativeId));
+            const batchIds = new Set(batches.value.map(batch => batch.id));
+            certificates.value = certificateResponse ? QualityCertificateAssembler.toEntitiesFromResponse(certificateResponse)
+                .filter(certificate => batchIds.has(certificate.harvestBatchId)) : [];
+            members.value = active;
+            cooperativeId.value = id;
+            ready.value = true;
+            if (director && id === null) notice.value = 'harvest-certification.scope.no-cooperative';
+        } catch {
+            if (revision === request) error.value = 'harvest-certification.scope.load-error';
+        } finally {
+            if (revision === request) loading.value = false;
+        }
     }
 
-    /**
-     * Loads batches, certificates and members of the cooperative.
-     * @param {number} [cooperativeId=1] - Cooperative.
-     */
-    function load(cooperativeId = DEMO_COOPERATIVE_ID) {
-        loading.value = true;
-        error.value = null;
-        Promise.all([
-            harvestCertificationApi.getBatchesByCooperative(cooperativeId),
-            harvestCertificationApi.getCertificates(),
-            harvestCertificationApi.getMembersByCooperative(cooperativeId)
-        ]).then(([batchesResponse, certificatesResponse, membersResponse]) => {
-            batches.value = HarvestBatchAssembler.toEntitiesFromResponse(batchesResponse);
-            certificates.value = QualityCertificateAssembler.toEntitiesFromResponse(certificatesResponse);
-            members.value = resourcesFromResponse(membersResponse, 'members')
-                .map(member => ({ id: Number(member.id), name: member.name ?? member.fullName, plots: member.plots ?? [] }));
-            loading.value = false;
-        }).catch(fail);
-    }
+    watch(() => iam.currentUser, load, { flush: 'sync' });
 
     /**
      * Validates the intake and grading sheet and builds the certificate preview:
@@ -75,6 +101,7 @@ const useHarvestCertificationStore = defineStore('harvest-certification', () => 
      * The draft, or the validation error.
      */
     async function prepareDraft(form) {
+        if (!canIssue.value) return { key: 'harvest-certification.scope.not-authorized' };
         const member = members.value.find(item => item.id === form.memberId);
         const plot = member?.plots.find(item => item.id === form.plotId);
         if (!member || !plot) return { key: 'harvest-certification.errors.select-member-plot' };
@@ -85,7 +112,7 @@ const useHarvestCertificationStore = defineStore('harvest-certification', () => 
         const batch = new HarvestBatch({
             id: 0,
             code: `BATCH-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`,
-            cooperativeId: DEMO_COOPERATIVE_ID,
+            cooperativeId: cooperativeId.value,
             memberId: member.id,
             memberName: member.name,
             plotId: plot.id,
@@ -114,7 +141,8 @@ const useHarvestCertificationStore = defineStore('harvest-certification', () => 
             batch,
             verificationToken: crypto.randomUUID(),
             sha256Hash: Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join(''),
-            issuedAt
+            issuedAt,
+            issuerName: iam.currentUser?.displayName
         };
     }
 
@@ -124,43 +152,55 @@ const useHarvestCertificationStore = defineStore('harvest-certification', () => 
      * @param {Object} draft - Draft built by `prepareDraft`.
      * @returns {Promise<{certificate: Object|null, batch: HarvestBatch}|null>} Issued certificate and batch.
      */
-    function issue(draft) {
+    async function issue(draft) {
+        if (loading.value) return null;
+        const issuer = iam.currentUser;
+        const request = revision;
+        const current = () => revision === request && iam.currentUser === issuer;
+        if (!canIssue.value || draft.batch.cooperativeId !== cooperativeId.value ||
+            !members.value.some(member => member.id === draft.batch.memberId &&
+                member.plots.some(plot => plot.id === draft.batch.plotId && plot.campaignId === draft.batch.campaignId))) {
+            error.value = 'harvest-certification.scope.not-authorized';
+            return null;
+        }
         loading.value = true;
         error.value = null;
-        let saved;
-        return harvestCertificationApi.createBatch(HarvestBatchAssembler.toResourceFromEntity(draft.batch))
-            .then(response => {
-                saved = HarvestBatchAssembler.toEntityFromResource(response.data);
-                batches.value = [saved, ...batches.value];
-                if (!saved.canIssueCertificate) throw new Error('harvest-certification.errors.batch-not-graded');
-                if (certificates.value.some(item => item.harvestBatchId === saved.id)) throw new Error('harvest-certification.errors.already-certified');
-                return harvestCertificationApi.createCertificate({
-                    harvestBatchId: saved.id,
-                    certificateNumber: `CERT-${saved.code}`,
-                    sha256Hash: draft.sha256Hash,
-                    verificationToken: draft.verificationToken,
-                    issuedByUserId: DEMO_ISSUER.userId,
-                    issuedByName: DEMO_ISSUER.name,
-                    issuedAt: draft.issuedAt,
-                    status: CertificateStatus.ACTIVE,
-                    revokedReason: null
+        try {
+            if (!draft.savedBatch) {
+                const response = await harvestCertificationApi.createBatch(HarvestBatchAssembler.toResourceFromEntity(draft.batch));
+                draft.savedBatch = HarvestBatchAssembler.toEntityFromResource(response.data);
+                if (!current()) return null;
+                batches.value = [draft.savedBatch, ...batches.value];
+            }
+            const saved = draft.savedBatch;
+            if (!saved.canIssueCertificate) throw new Error('harvest-certification.errors.batch-not-graded');
+            if (!draft.savedCertificate) {
+                if (certificates.value.some(item => item.harvestBatchId === saved.id))
+                    throw new Error('harvest-certification.errors.already-certified');
+                const response = await harvestCertificationApi.createCertificate({
+                    harvestBatchId: saved.id, certificateNumber: `CERT-${saved.code}`,
+                    sha256Hash: draft.sha256Hash, verificationToken: draft.verificationToken,
+                    issuedByUserId: issuer.id, issuedByName: issuer.displayName,
+                    issuedAt: draft.issuedAt, status: CertificateStatus.ACTIVE, revokedReason: null
                 });
-            })
-            .then(response => {
-                const certificate = QualityCertificateAssembler.toEntityFromResource(response.data);
-                certificates.value = [certificate, ...certificates.value];
-                return harvestCertificationApi.updateBatch({ ...HarvestBatchAssembler.toResourceFromEntity(saved), status: BatchStatus.CERTIFIED })
-                    .then(batchResponse => {
-                        const updated = HarvestBatchAssembler.toEntityFromResource(batchResponse.data);
-                        batches.value = batches.value.map(item => item.id === updated.id ? updated : item);
-                        loading.value = false;
-                        return { certificate, batch: updated };
-                    });
-            })
-            .catch(cause => {
-                fail(cause);
-                return saved ? { certificate: null, batch: saved } : null;
+                draft.savedCertificate = QualityCertificateAssembler.toEntityFromResource(response.data);
+                if (!current()) return null;
+                certificates.value = [draft.savedCertificate, ...certificates.value];
+            }
+            const response = await harvestCertificationApi.updateBatch({
+                ...HarvestBatchAssembler.toResourceFromEntity(saved), status: BatchStatus.CERTIFIED
             });
+            if (!current()) return null;
+            const batch = HarvestBatchAssembler.toEntityFromResource(response.data);
+            batches.value = batches.value.map(item => item.id === batch.id ? batch : item);
+            return { certificate: draft.savedCertificate, batch };
+        } catch {
+            if (current()) error.value = draft.savedBatch
+                ? 'harvest-certification.errors.issue-incomplete' : 'harvest-certification.errors.save-batch';
+            return null;
+        } finally {
+            if (current()) loading.value = false;
+        }
     }
 
     /**
@@ -187,6 +227,8 @@ const useHarvestCertificationStore = defineStore('harvest-certification', () => 
         loading,
         error,
         activeCertificates,
+        canIssue,
+        notice,
         load,
         prepareDraft,
         issue,
