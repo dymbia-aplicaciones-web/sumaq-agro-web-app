@@ -107,11 +107,17 @@ const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { 
       </section>
     </template>
 
-    <pv-card v-else-if="!store.loading" class="sa-card text-center">
+    <pv-card v-else-if="!store.loading && !store.error" class="sa-card text-center">
       <template #content>
         <i class="pi pi-building text-5xl empty-icon" aria-hidden="true"/>
+        <p v-if="store.cooperative">{{ t('profiles.cooperative.dashboard.no-metrics') }}</p>
+        <template v-else>
         <h1>{{ t('profiles.cooperative.dashboard.no-cooperative-title') }}</h1>
         <p>{{ t('profiles.cooperative.dashboard.no-cooperative-message') }}</p>
+        <router-link :to="{ name: 'profiles-cooperative-registration' }">
+          {{ t('profiles.cooperative.dashboard.register-cooperative') }}
+        </router-link>
+        </template>
       </template>
     </pv-card>
     <p v-if="store.error" class="sa-error" role="alert">{{ store.error }}</p>
